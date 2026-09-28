@@ -30,6 +30,7 @@ function analyse({ sec, now, planDate, holidays, inputs, leaves }) {
     const heldTT = past.filter(c => c.subj === k).length;
     const inp = inputs[k] || {};
     const exact = inp.mode === "exact";
+    const entered = exact ? inp.att !== "" && inp.att != null : inp.pct !== "" && inp.pct != null;
     const H = exact && inp.held !== "" && inp.held != null ? +inp.held : heldTT;
     let A = Math.min(H, exact ? +(inp.att || 0) : Math.round(((+inp.pct || 0) / 100) * H));
     // OD simulator: past OD days are credited back as present
@@ -46,13 +47,13 @@ function analyse({ sec, now, planDate, holidays, inputs, leaves }) {
     const absent = c => leaves[c.date] === "skip" || leaves[c.date] === "medical";
     const missP = futP.filter(absent).length, missS = fut.filter(absent).length;
     const odFut = fut.filter(c => leaves[c.date] === "od").length;
-    res[k] = { k, H, A, A0, odPast, odFut, heldTT, cur, R, RS, fut,
+    res[k] = { k, entered, H, A, A0, odPast, odFut, heldTT, cur, R, RS, fut,
       n75: need(A, H, R, 75), n90: need(A, H, R, 90), maxPct, irreversible: maxPct < 75,
       s75, s90, reach75: reach(s75), reach90: reach(s90),
       bunk: cur >= 75 ? Math.floor((100 * A - 75 * H) / 75) : 0,
       missP, missS, projPlan: pct(A + R - missP, H + R), projEnd: pct(A + RS - missS, H + RS) };
   }
-  const rs = Object.values(res), sum = f => rs.reduce((a, r) => a + f(r), 0);
+  const rs = Object.values(res).filter(r => r.entered), sum = f => rs.reduce((a, r) => a + f(r), 0);
   const H = sum(r => r.H), A = sum(r => r.A), R = sum(r => r.R), RS = sum(r => r.RS);
   // overall projection timeline (for the line chart)
   const byDate = {};
@@ -122,23 +123,24 @@ function renderInputs() {
 }
 
 function renderResults() {
-  const s = sec(), a = run(), rs = Object.values(a.res);
-  const filled = Object.keys(secInputs()).length > 0;
+  const s = sec(), a = run(), allRs = Object.values(a.res), rs = allRs.filter(r => r.entered);
+  const filled = Object.values(a.res).some(r => r.entered);
   const irr = rs.filter(r => r.irreversible), o = a.overall;
   const planTxt = S.planDate === SEMESTER.end ? "semester end" : fmt(S.planDate);
 
   $("#alert").innerHTML = filled && irr.length ? `<div class="irr-banner">
-      <div class="siren">⚠</div><div><h2>IRREVERSIBLE DETENTION</h2>
+      <div class="siren">!</div><div><h2>Irreversible detention</h2>
       <p>Even if you attend <b>every single remaining class</b>, you cannot reach 75% in:
       <b>${irr.map(r => esc(s.subjects[r.k].name) + ` (max ${p1(r.maxPct)}%)`).join(", ")}</b>. Talk to your faculty advisor / HOD now about condonation.</p></div></div>` : "";
 
   $("#summary").innerHTML = `
-    <div class="stat"><span>Today</span><b>${now().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}</b><small>${now().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</small></div>
+    <div class="stat"><span>Today</span><b>${now().toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</b><small>${now().toLocaleDateString("en-IN", { weekday: "long" })}, ${now().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</small></div>
     <div class="stat"><span>Classes left (sem)</span><b>${o.RS}</b><small>till ${fmt(SEMESTER.end)}</small></div>
     <div class="stat"><span>Classes left till plan date</span><b>${o.R}</b><small>${planTxt}</small></div>
     <div class="stat"><span>Overall attendance</span><b style="color:${col(o.cur)}">${filled ? p1(o.cur) + "%" : "—"}</b><small>${o.A}/${o.H} hours</small></div>`;
 
-  $("#results").innerHTML = rs.map(r => {
+  const pending = allRs.filter(r => !r.entered);
+  $("#results").innerHTML = (filled ? "" : `<p class="muted">Enter your attendance above to see your plan.</p>`) + rs.map(r => {
     const sub = s.subjects[r.k], [cls, lbl] = status(r);
     const line = (t, n, streak, reach) => {
       if (n > r.R) return `<li class="x">Can't reach ${t}% by ${planTxt} (needs ${n}, only ${r.R} left)</li>`;
@@ -155,7 +157,7 @@ function renderResults() {
            ${r.cur >= 75 ? `<li>Safe to skip <b>${r.bunk}</b> in a row right now and stay ≥75%</li>` : ""}
            ${r.missS || r.odFut ? `<li>With your leave plan: <b style="color:${col(r.projEnd)}">${p1(r.projEnd)}%</b> at sem end <span class="muted">(${r.missS} absent, ${r.odFut} OD hrs)</span></li>` : ""}</ul>`}
     </div>`;
-  }).join("");
+  }).join("") + (filled && pending.length ? `<div class="card"><b>Not entered yet</b><p class="muted">${pending.map(r => esc(s.subjects[r.k].name)).join(", ")} — add their % above to include them.</p></div>` : "");
 
   renderCharts(a, filled);
   renderUpcoming(a);
@@ -164,7 +166,7 @@ function renderResults() {
 
 // ═════════════ CHARTS (inline SVG) ═════════════
 function renderCharts(a, filled) {
-  const s = sec(), o = a.overall, rs = Object.values(a.res);
+  const s = sec(), o = a.overall, rs = Object.values(a.res).filter(r => r.entered);
   if (!filled) { $("#charts").innerHTML = `<p class="muted">Enter your attendance above to see charts.</p>`; return; }
   // 1. gauge
   const arc = (p, r) => { const t = Math.PI * (1 - Math.min(100, p) / 100); return `${100 + r * Math.cos(t)} ${100 - r * Math.sin(t)}`; };
@@ -182,10 +184,10 @@ function renderCharts(a, filled) {
     ${[0, 25, 50, 75, 90, 100].map(p => `<line x1="${x(p)}" y1="4" x2="${x(p)}" y2="${H2 - 22}" stroke="${p === 75 ? "var(--red)" : p === 90 ? "var(--green)" : "var(--line)"}" stroke-dasharray="${p === 75 || p === 90 ? "4 3" : ""}"/><text x="${x(p)}" y="${H2 - 8}" font-size="10" text-anchor="middle" fill="currentColor" opacity=".6">${p}%</text>`).join("")}
     ${rs.map((r, i) => { const y = 8 + i * rowH; return `<g><title>${esc(s.subjects[r.k].name)}: now ${p1(r.cur)}%, projected ${p1(r.projEnd)}%</title>
       <text x="${left - 6}" y="${y + 13}" font-size="11" text-anchor="end" fill="currentColor">${esc(short(s.subjects[r.k].name))}</text>
-      <rect x="${left}" y="${y + 3}" width="${Math.max(2, x(r.cur) - left)}" height="14" rx="4" fill="${col(r.cur)}" opacity=".85"/>
-      <circle cx="${x(r.projEnd)}" cy="${y + 10}" r="5" fill="var(--card)" stroke="currentColor" stroke-width="2"/></g>`; }).join("")}</svg>`;
+      <rect x="${left}" y="${y + 3}" width="${Math.max(2, x(r.cur) - left)}" height="12" rx="6" fill="${r.cur < 75 ? "var(--red)" : "var(--acc)"}" opacity="${r.cur < 90 ? .75 : 1}"/>
+      <circle cx="${x(r.projEnd)}" cy="${y + 9}" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="1.5"/></g>`; }).join("")}</svg>`;
   // 3. projection line over time
-  const L = a.line, LW = 520, LH = 190, pl = 34, pb = 22;
+  const L = a.line, LW = 960, LH = 240, pl = 34, pb = 22;
   const lo = Math.max(0, Math.floor(Math.min(...L.map(p => Math.min(p.all, p.plan)), 70) / 10) * 10);
   const tx = i => pl + ((LW - pl - 10) * i) / Math.max(1, L.length - 1), ty = p => 8 + ((LH - pb - 8) * (100 - p)) / (100 - lo);
   const path = key => L.map((p, i) => `${i ? "L" : "M"}${tx(i).toFixed(1)} ${ty(p[key]).toFixed(1)}`).join(" ");
@@ -200,8 +202,8 @@ function renderCharts(a, filled) {
   $("#charts").innerHTML = `
     <div class="chartbox"><h4>Overall health</h4>${gauge}
       <div class="zones"><span class="pill top">${zones.top} at 90%+</span><span class="pill ok">${zones.ok} safe</span><span class="pill bad">${zones.bad} danger</span><span class="pill irr">${zones.irr} irreversible</span></div></div>
-    <div class="chartbox"><h4>Subject-wise · bar = now, ○ = projected sem end</h4>${bars}</div>
-    <div class="chartbox wide"><h4>Overall % projected to 29 Nov</h4>${lineSvg}</div>`;
+    <div class="chartbox"><h4>By subject <span class="muted" style="font-weight:400">— bar is now, dot is projected at semester end</span></h4>${bars}</div>
+    <div class="chartbox wide"><h4>Projected overall attendance to 29 Nov</h4>${lineSvg}</div>`;
 }
 
 // ═════════════ OD / LEAVE SIMULATOR ═════════════
@@ -299,11 +301,15 @@ function parseDays(q) {
 
 function advisor(q) {
   const s = sec(), low = q.toLowerCase(), a = run();
-  const filled = Object.keys(secInputs()).length > 0;
+  const filled = Object.values(a.res).some(r => r.entered);
   if (!filled) return { text: `First enter your current attendance % in step 3 — I read your dashboard to answer. (Section: <b>${esc(s.name)}</b>)` };
   const subs = findSubjects(q);
   const mentioned = /chem|math|lab|physics|german|japanese|biology|[a-z]{4,}/i.test(q);
-  const targetKs = subs.length ? subs : Object.keys(s.subjects);
+  const hi = /^\s*(hi+|hello+|hey+|yo+|hl+o+|helo+|yohoo+|sup|vanakkam|namaste|good (morning|evening|afternoon))\b/i.test(q) && q.trim().split(/\s+/).length <= 3;
+  if (hi) return { text: `Hi. I'm watching your <b>${esc(s.name)}</b> dashboard (overall <b style="color:${col(a.overall.cur)}">${p1(a.overall.cur)}%</b>). Ask me things like:<ul><li>"If I take a 3-day sick leave starting tomorrow, will my ${esc(s.subjects[Object.keys(s.subjects)[1]].name)} drop below 75%?"</li><li>"How many classes can I bunk?"</li><li>"When will I reach 90%?"</li><li>"2 days OD from 5 Oct"</li><li>"How am I doing?"</li></ul>` };
+  const skippedSubs = subs.filter(k => !a.res[k].entered);
+  const targetKs = (subs.length ? subs : Object.keys(s.subjects)).filter(k => a.res[k].entered);
+  if (!targetKs.length) return { text: `You haven't entered your % for ${skippedSubs.map(k => `<b>${esc(s.subjects[k].name)}</b>`).join(", ") || "those subjects"} yet — add it in step 3 and ask again.` };
   const nm = k => `<b>${esc(s.subjects[k].name)}</b>`;
   const notFound = !subs.length && /\b(chem|chemistry|physics|german|japanese|biology|maths?|lab|ml|dbms|vlsi)\b/i.test(low)
     ? `<p class="muted">I couldn't find "${esc(low.match(/\b(chem\w*|physics|german|japanese|biology|maths?|lab|ml|dbms|vlsi)\b/i)[0])}" in ${esc(s.name)} — showing all your subjects. Your subjects: ${Object.values(s.subjects).map(x => short(x.name)).join(", ")}.</p>` : "";
@@ -326,11 +332,11 @@ function advisor(q) {
       return { k, missed, after, drop, drop90, rec, recDate, end: rr.projEnd, now: r.cur, irr: rr.irreversible || rr.maxPct < 75 };
     }).filter(x => subs.length || x.missed);
     const bad = rows.filter(x => x.drop);
-    const head = `${type === "medical" ? "🤒" : type === "od" ? "🏅" : "🏖️"} <b>${n}-day ${LEAVE[type].toLowerCase()}</b>: ${fmt(from)}${n > 1 ? ` → ${fmt(to)}` : ""}` +
+    const head = `<b>${n}-day ${LEAVE[type].toLowerCase()}</b>: ${fmt(from)}${n > 1 ? ` → ${fmt(to)}` : ""}` +
       (type === "od" ? ` <span class="muted">(OD is counted as present)</span>` : type === "medical" ? ` <span class="muted">(counted absent unless the HOD condones it)</span>` : "");
-    if (!rows.length) return { text: `${head}<p>You have no classes${subs.length ? " of " + nm(subs[0]) : ""} on those days (weekend/holiday) — zero impact. 🎉</p>`, leave: { from, to, type } };
+    if (!rows.length) return { text: `${head}<p>You have no classes${subs.length ? " of " + nm(subs[0]) : ""} on those days (weekend/holiday) — no impact.</p>`, leave: { from, to, type } };
     const body = rows.map(x => `<li>${nm(x.k)}: ${type === "od" ? "on OD for" : "miss"} <b>${x.missed}</b> hr → now <b>${p1(x.now)}%</b>, right after the leave <b style="color:${col(x.after)}">${p1(x.after)}%</b>
-      ${x.drop ? `<br><span class="warn">⚠ Drops below 75%.</span> ${x.irr ? `<b class="warn">Cannot recover this semester!</b>` : `Attend the next <b>${x.rec}</b> classes in a row to get back${x.recDate ? ` (~${fmt(x.recDate)})` : ""}.`}` : x.drop90 ? `<br><span class="muted">Falls under 90%.</span>` : ""}
+      ${x.drop ? `<br><span class="warn">Drops below 75%.</span> ${x.irr ? `<b class="warn">Cannot recover this semester!</b>` : `Attend the next <b>${x.rec}</b> classes in a row to get back${x.recDate ? ` (~${fmt(x.recDate)})` : ""}.`}` : x.drop90 ? `<br><span class="muted">Falls under 90%.</span>` : ""}
       <br><span class="muted">Sem-end if you attend everything else: ${p1(x.end)}%</span></li>`).join("");
     const verdict = bad.length ? `<p class="warn"><b>Verdict:</b> risky — ${bad.length} subject(s) fall into the detention zone.${type === "medical" ? " Get a medical certificate and apply for condonation." : ""}</p>`
       : `<p class="good"><b>Verdict:</b> safe — you stay above 75% everywhere${subs.length ? "" : " this leave touches"}.</p>`;
@@ -339,22 +345,23 @@ function advisor(q) {
   // ── Intent 2: how many can I skip ──
   if (/skip|bunk|miss|leave|absent|off/.test(low)) {
     return { text: `${notFound}<p>Classes you can skip and still stay ≥75%:</p><ul>${targetKs.map(k => { const r = a.res[k];
-      return r.cur < 75 ? `<li>${nm(k)}: <span class="warn">none — you're at ${p1(r.cur)}%</span>. Attend ${r.s75} in a row first.</li>`
+      return r.irreversible ? `<li>${nm(k)}: <span class="warn">none — ${p1(r.cur)}% and 75% is out of reach this semester (max ${p1(r.maxPct)}%)</span>. Attend everything &amp; talk to your HOD.</li>`
+        : r.cur < 75 ? `<li>${nm(k)}: <span class="warn">none — you're at ${p1(r.cur)}%</span>. Attend ${r.s75} in a row first.</li>`
         : `<li>${nm(k)}: <b>${r.bunk}</b> right now · <b>${Math.max(0, r.R - r.n75)}</b> of ${r.R} until ${S.planDate === SEMESTER.end ? "sem end" : fmt(S.planDate)}</li>`; }).join("")}</ul>` };
   }
   // ── Intent 3: when will I reach / how many to attend ──
   if (/need|attend|how many|reach|get to|recover|90|75/.test(low)) {
     const t = /90/.test(low) ? 90 : 75;
-    return { text: `${notFound}<p>To reach/keep <b>${t}%</b>:</p><ul>${targetKs.map(k => { const r = a.res[k], n = t === 90 ? r.n90 : r.n75, st = t === 90 ? r.s90 : r.s75, rd = t === 90 ? r.reach90 : r.reach75;
-      return r.irreversible && t === 75 ? `<li>${nm(k)}: <span class="warn">impossible — max ${p1(r.maxPct)}%</span></li>`
-        : `<li>${nm(k)} (${p1(r.cur)}%): attend <b>${n}</b> of ${r.R} left${st ? ` · ${st} in a row gets you there${rd && rd !== "never" ? ` by ~${fmt(rd)}` : ""}` : " · already there ✅"}</li>`; }).join("")}</ul>` };
+    return { text: `${notFound}<p>To reach/keep <b>${t}%</b> by semester end:</p><ul>${targetKs.map(k => { const r = a.res[k], n = need(r.A, r.H, r.RS, t), st = t === 90 ? r.s90 : r.s75, rd = t === 90 ? r.reach90 : r.reach75;
+      if (r.maxPct < t) return `<li>${nm(k)} (${p1(r.cur)}%): <span class="warn">can't reach ${t}% this semester — max ${p1(r.maxPct)}% even attending all ${r.RS} left</span></li>`;
+      return `<li>${nm(k)} (${p1(r.cur)}%): attend <b>${n}</b> of ${r.RS} left${n < r.RS ? ` (can skip ${r.RS - n})` : " — every single one!"}${st ? ` · ${st} in a row gets you there${rd && rd !== "never" ? ` by ~${fmt(rd)}` : ""}` : " · already there"}</li>`; }).join("")}</ul>` };
   }
   // ── Intent 4: status / overview ──
   const rs = targetKs.map(k => a.res[k]);
   const worst = [...rs].sort((x, y) => x.cur - y.cur);
   return { text: `${notFound}<p>Overall: <b style="color:${col(a.overall.cur)}">${p1(a.overall.cur)}%</b> · ${a.overall.RS} classes left this semester.</p>
-    <ul>${worst.map(r => `<li>${nm(r.k)}: <b style="color:${col(r.cur)}">${p1(r.cur)}%</b> — ${status(r)[1]}${r.irreversible ? " ⚠" : ""}</li>`).join("")}</ul>
-    <p class="muted">Try: "If I take a 3-day sick leave starting tomorrow, will my ${esc(short(s.subjects[worst[0].k].name))} drop below 75%?" · "How many classes can I bunk?" · "When will I reach 90%?" · "2 days OD from 5 Oct"</p>` };
+    <ul>${worst.map(r => `<li>${nm(r.k)}: <b style="color:${col(r.cur)}">${p1(r.cur)}%</b> — ${status(r)[1]}${r.irreversible ? "" : ""}</li>`).join("")}</ul>
+    <p class="muted">Try: "If I take a 3-day sick leave starting tomorrow, will my ${esc(s.subjects[worst[0].k].name)} drop below 75%?" · "How many classes can I bunk?" · "When will I reach 90%?" · "2 days OD from 5 Oct"</p>` };
 }
 
 async function askLLM(q, localHtml) { // optional: Vercel /api/chat with ANTHROPIC_API_KEY rewrites the computed answer
@@ -372,8 +379,8 @@ async function askLLM(q, localHtml) { // optional: Vercel /api/chat with ANTHROP
 
 function chatMsg(html, who, leave) {
   const el = document.createElement("div"); el.className = "msg " + who; el.innerHTML = html;
-  if (leave) { const b = document.createElement("button"); b.className = "pri small"; b.textContent = "➕ Add this to my leave plan";
-    b.onclick = () => { addLeaveRange(leave.from, leave.to, leave.type); b.textContent = "✓ Added to OD simulator"; b.disabled = true; }; el.appendChild(b); }
+  if (leave) { const b = document.createElement("button"); b.className = "pri small"; b.textContent = "Add to leave plan";
+    b.onclick = () => { addLeaveRange(leave.from, leave.to, leave.type); b.textContent = "Added to leave plan"; b.disabled = true; }; el.appendChild(b); }
   $("#chatlog").appendChild(el); $("#chatlog").scrollTop = 1e9; return el;
 }
 async function onAsk(q) {
@@ -382,7 +389,7 @@ async function onAsk(q) {
   const r = advisor(q);
   const el = chatMsg(r.text, "bot", r.leave);
   const llm = await askLLM(q, r.text);
-  if (llm) { const p = document.createElement("div"); p.className = "ai"; p.innerHTML = "✨ " + esc(llm).replace(/\n/g, "<br>"); el.insertBefore(p, el.firstChild); }
+  if (llm) { const p = document.createElement("div"); p.className = "ai"; p.innerHTML = "" + esc(llm).replace(/\n/g, "<br>"); el.insertBefore(p, el.firstChild); }
 }
 
 // ═════════════ EVENTS ═════════════
@@ -414,7 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#nowreset").onclick = () => { S.nowOverride = ""; save(); renderAll(); };
   // chat
   $("#fab").onclick = () => { $("#chat").classList.toggle("open"); if (!$("#chatlog").children.length)
-    chatMsg(`Hi! I'm your <b>Attendance Advisor</b> 🤖 I read your live dashboard (${esc(sec().name)}) and do the math for you.<br><span class="muted">Ask e.g. "If I take a 3-day sick leave starting tomorrow, will my attendance drop below 75%?"</span>`, "bot");
+    chatMsg(`Hi — I'm your Attendance Advisor. I read your live dashboard (${esc(sec().name)}) and do the math for you.<br><span class="muted">Ask e.g. "If I take a 3-day sick leave starting tomorrow, will my attendance drop below 75%?"</span>`, "bot");
     $("#chatin").focus(); };
   $("#chatx").onclick = () => $("#chat").classList.remove("open");
   $("#chatform").onsubmit = e => { e.preventDefault(); const q = $("#chatin").value; $("#chatin").value = ""; onAsk(q); };
