@@ -83,14 +83,36 @@ code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;backgroun
 .warn{color:var(--red);font-weight:500}.good{color:var(--green);font-weight:500}button.small{font-size:13px;padding:6px 12px;margin-top:8px}
 .sugg{display:flex;gap:6px;overflow-x:auto;padding:0 16px 10px;scrollbar-width:none}.sugg button{font-size:13px;white-space:nowrap;padding:6px 12px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
 #chatform{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}#chatform input{flex:1;border-radius:980px;padding:9px 16px}
+
+.tabs{display:inline-flex;background:var(--fill);border-radius:10px;padding:3px;margin:22px 0 0}.tabs button{background:none;border-radius:8px;padding:7px 18px;font-weight:500;color:var(--mut)}.tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.search{display:flex;gap:8px;background:var(--card);border-radius:16px;padding:8px;box-shadow:var(--shadow)}.search input{flex:1;font-size:17px;background:none;padding:12px 14px}.search input:focus{background:none;border-color:transparent}.search button{padding:10px 22px;font-size:15px}
+.examples{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0}.examples button{font-size:13px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
+#rresult{margin-top:16px}.qchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}.qchip{background:color-mix(in srgb,var(--acc) 12%,transparent);color:var(--acc);font-size:13px;font-weight:500;padding:4px 10px;border-radius:980px}
+.rsum{margin:6px 0 10px}.rnote{background:var(--card);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.rcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.rcard{background:var(--card);border-radius:16px;padding:16px;box-shadow:var(--shadow)}.rtop{display:flex;justify-content:space-between;align-items:center}.rtop b{font-size:20px;letter-spacing:-.02em}
+.rmeta{display:flex;gap:6px;margin:10px 0}.rmeta span{font-size:12px;background:var(--fill);border-radius:6px;padding:2px 8px;color:var(--mut)}
+.rfree{font-weight:500;color:var(--green)}.rfree small{display:block;color:var(--mut);font-weight:400;font-size:12px;margin-top:2px}
+.floor{background:var(--card);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:10px}.floorhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tile{border-radius:12px;padding:10px 12px;background:var(--fill)}.tile .tname{font-weight:600;display:flex;justify-content:space-between;align-items:center}.tile .tsub{font-size:12px;color:var(--mut);margin-top:2px}
+.tile.free{background:color-mix(in srgb,var(--green) 13%,var(--card))}.tile.free .tsub{color:var(--green)}
+.tile.partial{background:color-mix(in srgb,var(--amber) 12%,var(--card))}.tile.partial .tsub{color:var(--amber)}
+.tile.busy{opacity:.7}.ac{font-size:10px;font-weight:600;color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,transparent);border-radius:4px;padding:1px 5px}
+.gridctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.gridctl label{font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center}
+.gridctl select{width:auto;padding-right:30px;font-size:14px}
+.redit{border-spacing:0}.redit td,.redit th{text-align:left;padding:5px 8px;border-radius:0;background:none;font-weight:400;border-bottom:1px solid var(--line)}.redit select{width:auto;font-size:13px;padding:4px 26px 4px 8px}.redit input[type=number]{padding:4px 8px}
+[hidden]{display:none!important}
 </style>
 </head>
 <body><div class="wrap">
 <header>
   <button class="themebtn" id="themebtn" aria-label="Toggle light / dark mode" title="Toggle light / dark mode"></button>
-  <div><h1>Attendance Planner</h1><p class="sub">Know exactly which classes you can miss — and which you can’t.</p></div>
-  <div class="muted" style="margin-top:10px">Odd semester · 29 Aug – 29 Nov 2026 · 15 sections</div>
+  <div><h1 id="ptitle">Attendance Planner</h1><p class="sub" id="psub">Know exactly which classes you can miss — and which you can’t.</p></div>
+  <div class="muted" style="margin-top:10px">Odd semester · 29 Aug – 29 Nov 2026 · 15 sections · 26 rooms</div>
+  <div class="tabs" role="tablist"><button data-tab="att" class="on">Attendance</button><button data-tab="rooms">Free rooms</button></div>
 </header>
+<section id="tab-att">
 
 <div class="grid2">
   <div class="panel">
@@ -141,6 +163,30 @@ code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;backgroun
       Safe skips now: <code>⌊attended/0.75 − held⌋</code>.</p></details>
   </div>
 </div>
+</section>
+<section id="tab-rooms" hidden>
+  <form class="search" id="rsearch"><input id="rq" placeholder="e.g. I need an AC room on the ground floor for me and my team for the next 2 hours" autocomplete="off"><button class="pri">Find</button></form>
+  <div class="examples">
+    <button data-rq="I need an AC room on the ground floor for me and my team for the next 2 hours">AC · ground floor · team · 2 hrs</button>
+    <button data-rq="Quiet room for 2 of us for an hour">Quiet room, 2 people, 1 hr</button>
+    <button data-rq="Any lab free at 2pm for 90 minutes">Lab at 2 PM, 90 min</button>
+    <button data-rq="Room on the 6th floor tomorrow at 10am for 3 hours for a group of 8">6th floor, tomorrow 10 AM</button>
+  </div>
+  <div id="rresult"></div>
+  <h2 class="sec-h">Floor by floor</h2>
+  <div class="gridctl">
+    <input type="date" id="rdate"><input type="time" id="rtime" step="300">
+    <select id="rdur"><option value="30">30 min</option><option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option><option value="180">3 hours</option></select>
+    <button id="rnow">Now</button>
+    <label><input type="checkbox" id="racOnly"> AC only</label><label><input type="checkbox" id="rlabOnly"> Labs only</label>
+  </div>
+  <p class="muted" id="rgridsum"></p>
+  <div id="rgrid"></div>
+  <div class="panel" style="margin-top:16px"><details><summary>Room details &amp; assumptions</summary>
+    <p class="muted">Which room each class uses comes straight from the 10 timetables: the section's venue for regular slots, plus the rooms printed for labs, CDC, workshop and so on. Floor = the first digit of the room number (IST 20/21 = ground floor). The timetables don't list AC or seating, so those are estimates — correct them below and search uses your values. Only rooms that appear in these timetables are tracked.</p>
+    <label class="muted" style="display:flex;gap:6px;align-items:center;margin:8px 0"><input type="checkbox" id="rground"> Treat 1xx rooms as the ground floor</label>
+    <div class="tt" id="redit"></div><button id="rreset" style="margin-top:10px">Reset to defaults</button></details></div>
+</section>
 </div>
 <button id="fab" title="Attendance Advisor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>Ask Advisor</button>
 <div id="chat"><div class="chathead"><div><b>Attendance Advisor</b><small>Reads your dashboard and does the math</small></div><button id="chatx" aria-label="Close">✕</button></div>
@@ -149,4 +195,5 @@ code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;backgroun
   <form id="chatform"><input id="chatin" placeholder="Ask about your attendance…" autocomplete="off"><button class="pri">Send</button></form></div>
 <script src="data.js"></script>
 <script src="app.js"></script>
+<script src="rooms.js"></script>
 </body></html>

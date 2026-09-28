@@ -2,7 +2,8 @@
 // Set GEMINI_API_KEY (or ANTHROPIC_API_KEY) in Vercel env vars.
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { question, context, computed } = req.body || {};
+  const { question, context, computed, mode } = req.body || {};
+  if (mode === "parse") return parseRooms(question, res);
   const system = "You are a friendly college Attendance Advisor. Answer in 2-4 short sentences. Use ONLY the numbers in COMPUTED/CONTEXT; never invent or recalculate numbers. Give a clear verdict and one practical tip.";
   const prompt = `CONTEXT: ${JSON.stringify(context)}\nCOMPUTED: ${computed}\nQUESTION: ${question}`;
   try {
@@ -33,4 +34,29 @@ export default async function handler(req, res) {
     }
     return res.status(503).json({ error: "no key" });
   } catch (e) { return res.status(500).json({ error: String(e) }); }
+}
+
+// Round 2: turn a free-text room request into structured filters (JSON) with Gemini.
+async function parseRooms(q, res) {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return res.status(503).json({ error: "no key" });
+  const now = new Date(Date.now() + 5.5 * 3600e3); // IST
+  const sys = `Extract room-search filters from a college student's request. Current IST time: ${now.toISOString().slice(0, 16)} (${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][now.getUTCDay()]}).
+Return ONLY JSON with keys: floor (0=ground,1=first,...; null if not said), ac (true/false/null), type ("Lab"|"Seminar / CDC"|"Classroom"|"Workshop"|null),
+people (integer; "me and my team" = 5, "me and a friend" = 2; null if unknown), duration (minutes; "rest of the day" = "eod"; null if not said),
+start (minutes after midnight, 24h; null means now), day ("tomorrow" or 3-letter weekday lowercase like "wed"; null = today), quiet (true if they want quiet/study).`;
+  const models = [process.env.GEMINI_MODEL, "gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"].filter(Boolean);
+  for (const m of models) {
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+        method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: "user", parts: [{ text: String(q || "").slice(0, 500) }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0 } }),
+      });
+      const j = await r.json();
+      const txt = j.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
+      if (txt) { try { return res.json({ filters: JSON.parse(txt.replace(/^```json|```$/g, "")), model: m }); } catch {} }
+    } catch {}
+  }
+  return res.status(502).json({ error: "parse failed" });
 }

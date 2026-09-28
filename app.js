@@ -399,6 +399,16 @@ const isDark = () => (document.documentElement.dataset.theme || (matchMedia("(pr
 const paintThemeBtn = () => { $("#themebtn").innerHTML = isDark() ? SUN : MOON; };
 document.addEventListener("DOMContentLoaded", () => {
   renderAll(); paintThemeBtn();
+  document.querySelectorAll("[data-tab]").forEach(b => (b.onclick = () => {
+    document.querySelectorAll("[data-tab]").forEach(x => x.classList.toggle("on", x === b));
+    $("#tab-att").hidden = b.dataset.tab !== "att"; $("#tab-rooms").hidden = b.dataset.tab !== "rooms";
+    $("#fab").hidden = b.dataset.tab !== "att";
+    $("#ptitle").textContent = b.dataset.tab === "att" ? "Attendance Planner" : "Free Rooms";
+    $("#psub").textContent = b.dataset.tab === "att" ? "Know exactly which classes you can miss — and which you can’t." : "Find an empty classroom that stays empty — straight from every section's timetable."; if (b.dataset.tab !== "att") $("#chat").classList.remove("open");
+    try { localStorage.setItem("vc_tab", b.dataset.tab); } catch {}
+    if (b.dataset.tab === "rooms") renderGrid();
+  }));
+  setTimeout(() => { initRooms(); try { const t = localStorage.getItem("vc_tab"); if (t === "rooms") document.querySelector('[data-tab="rooms"]').click(); } catch {} }, 0);
   $("#themebtn").onclick = () => { const t = isDark() ? "light" : "dark"; document.documentElement.dataset.theme = t;
     try { localStorage.setItem("vc_theme", t); } catch {} paintThemeBtn(); renderResults(); };
   $("#section").onchange = e => { S.secId = e.target.value; S.leaves = {}; save(); renderAll(); };
