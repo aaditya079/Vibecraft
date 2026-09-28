@@ -216,7 +216,15 @@ function renderCharts(a, filled) {
   $("#charts").innerHTML = `
     <div class="chartbox"><h4>Overall health</h4>${gauge}
       <div class="zones"><span class="pill top">${zones.top} at 90%+</span><span class="pill ok">${zones.ok} safe</span><span class="pill bad">${zones.bad} danger</span><span class="pill irr">${zones.irr} irreversible</span></div></div>
-    <div class="chartbox"><h4>By subject <span class="muted" style="font-weight:400">— bar is now, dot is projected at semester end</span></h4>${bars}</div>
+    <div class="chartbox"><h4>By subject</h4>${bars}
+      <div class="legend">
+        <span><i style="background:var(--acc);height:8px;border-radius:4px"></i>Current % (75% or above)</span>
+        <span><i style="background:var(--red);height:8px;border-radius:4px"></i>Current % (below 75%)</span>
+        <span><i style="width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink);background:none"></i>Projected at semester end</span>
+        <span><i style="background:repeating-linear-gradient(90deg,var(--red) 0 4px,transparent 4px 7px)"></i>75% minimum</span>
+        <span><i style="background:repeating-linear-gradient(90deg,var(--green) 0 4px,transparent 4px 7px)"></i>90% target</span>
+      </div>
+      <p class="muted" style="margin:8px 0 0;font-size:12px">${rs.map(r => `<b>${esc(short(s.subjects[r.k].name))}</b> ${esc(s.subjects[r.k].name.replace(/\s*\(.*?\)/g, ""))}`).join(" · ")}</p></div>
     <div class="chartbox wide"><h4>Projected overall attendance to 29 Nov</h4>${lineSvg}</div>`;
 }
 
