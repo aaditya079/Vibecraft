@@ -161,24 +161,24 @@ button.big{width:100%;padding:12px;font-size:16px}
 </header>
 <section id="tab-att">
 
-<div class="grid2">
-  <div class="panel">
-    <h3>Section</h3>
-    <select id="section"></select>
-    <p class="muted" id="secinfo"></p>
-    <h3 style="margin-top:20px">Plan until</h3>
-    <div class="row"><input type="date" id="plan">
-      <button data-plan="7">+1 week</button><button data-plan="14">+2 weeks</button><button data-plan="30">+1 month</button><button data-plan="end">Sem end</button></div>
+<div class="panel">
+  <div class="grid2" style="gap:24px">
+    <div>
+      <h3>Section</h3>
+      <select id="section"></select>
+      <p class="muted" id="secinfo"></p>
+    </div>
+    <div>
+      <h3>Plan until</h3>
+      <div class="row"><input type="date" id="plan">
+        <button data-plan="7">+1 week</button><button data-plan="14">+2 weeks</button><button data-plan="30">+1 month</button><button data-plan="end">Sem end</button></div>
+      <p class="muted" style="margin:8px 0 0">Govt. holidays and weekends are skipped automatically.</p>
+    </div>
   </div>
-  <div class="panel">
-    <h3>Holidays</h3>
-    <div id="hols"></div>
-    <div class="row"><input type="date" id="holdate"><input id="holname" placeholder="Name" style="width:130px"><button id="addhol">Add</button></div>
-    <details style="margin-top:10px"><summary>Simulate a different date</summary>
-      <div class="row" style="margin-top:8px"><input type="date" id="simdate" min="2026-08-29" max="2026-11-29"><input type="time" id="simtime" step="300"><button class="pri" id="simapply">Apply</button><button id="nowreset">Use real time</button></div>
-      <div class="row" style="margin-top:8px"><span class="muted">Quick:</span><button data-sim="mon-1350">Mon 1:50 PM</button><button data-sim="tue-1000">Tue 10:00 AM</button><button data-sim="wed-1130">Wed 11:30 AM</button></div>
-      <p class="muted" id="simstatus" style="margin:8px 0 0"></p></details>
-  </div>
+  <details style="margin-top:14px"><summary>Simulate a different date</summary>
+    <div class="row" style="margin-top:8px"><input type="date" id="simdate" min="2026-08-29" max="2026-11-29"><input type="time" id="simtime" step="300"><button class="pri" id="simapply">Apply</button><button id="nowreset">Use real time</button></div>
+    <div class="row" style="margin-top:8px"><span class="muted">Quick:</span><button data-sim="mon-1350">Mon 1:50 PM</button><button data-sim="tue-1000">Tue 10:00 AM</button><button data-sim="wed-1130">Wed 11:30 AM</button></div>
+    <p class="muted" id="simstatus" style="margin:8px 0 0"></p></details>
 </div>
 
 <div id="alert"></div>

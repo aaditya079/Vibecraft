@@ -75,7 +75,7 @@ const store = { get(k, d) { try { return JSON.parse(localStorage.getItem("vc_" +
 const S = {
   secId: store.get("sec", "II-BME"),
   planDate: store.get("plan", SEMESTER.end),
-  holidays: store.get("hol", DEFAULT_HOLIDAYS),
+  holidays: DEFAULT_HOLIDAYS,
   inputs: store.get("inp", {}),
   leaves: (x => (Array.isArray(x) ? Object.fromEntries(x.map(d => [d, "skip"])) : x))(store.get("lv", {})),
   nowOverride: store.get("now", ""),
@@ -259,6 +259,7 @@ function renderTT() {
     <p class="muted" style="margin-top:6px">${Object.values(s.subjects).map(x => `<b>${short(x.name)}</b> ${esc(x.name)}`).join(" · ")}</p>`;
 }
 function renderHolidays() {
+  if (!$("#hols")) return; // holiday editor removed from the UI; holidays still apply in every calculation
   $("#hols").innerHTML = S.holidays.map((h, i) => `<span class="chip">${fmt(h.date)} · ${esc(h.name)} <button data-delhol="${i}">×</button></span>`).join("");
 }
 function renderAll() {
@@ -472,8 +473,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.id === "clearlv") { S.leaves = {}; save(); renderResults(); return; }
     const d = e.target.dataset.dellv; if (d) { delete S.leaves[d]; save(); renderResults(); } });
   $("#lvadd").onclick = () => { const f = $("#lvfrom").value, t = $("#lvto").value || f; if (!f) return; addLeaveRange(f, t < f ? f : t, $("#lvtype").value); };
-  $("#hols").addEventListener("click", e => { const i = e.target.dataset.delhol; if (i == null) return; S.holidays.splice(+i, 1); save(); renderAll(); });
-  $("#addhol").onclick = () => { const d = $("#holdate").value; if (!d) return; S.holidays.push({ date: d, name: $("#holname").value || "Holiday" }); save(); renderAll(); };
+  if ($("#hols")) $("#hols").addEventListener("click", e => { const i = e.target.dataset.delhol; if (i == null) return; S.holidays.splice(+i, 1); save(); renderAll(); });
+  if ($("#addhol")) $("#addhol").onclick = () => { const d = $("#holdate").value; if (!d) return; S.holidays.push({ date: d, name: $("#holname").value || "Holiday" }); save(); renderAll(); };
   const setSim = v => { S.nowOverride = v; save(); renderAll(); if (typeof renderGrid === "function") { renderGrid(); renderMap(); renderPanel(); } };
   $("#simapply").onclick = () => { const d = $("#simdate").value, t = $("#simtime").value || "10:00"; if (d) setSim(`${d}T${t}`); };
   document.querySelectorAll("[data-sim]").forEach(b => (b.onclick = () => {
