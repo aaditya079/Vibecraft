@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attendance Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#141824;--mut:#6b7280;--line:#e5e7eb;--acc:#4f46e5;--green:#16a34a;--amber:#d97706;--red:#dc2626;--top:#0891b2}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1017;--card:#161a23;--ink:#e8eaf0;--mut:#9aa1ad;--line:#262b36;--acc:#818cf8}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em}h1 span{color:var(--acc)}
+.sec-h{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:18px 0 0}.sub{color:var(--mut);margin:2px 0 0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.panel h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:800px){.grid2{grid-template-columns:1fr}}
+select,input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+select{width:100%;font-weight:600;font-size:16px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 12px}
+button.pri{background:var(--acc);color:#fff;border:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--mut);font-size:13px}
+.inrow{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.subj{display:flex;flex-direction:column;min-width:200px;flex:1}.subj small{color:var(--mut);font-size:12px}
+.ctl{display:flex;gap:6px;align-items:center}.ctl input{width:92px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}.seg button{border:0;border-radius:0;padding:6px 10px;font-size:13px}.seg .on{background:var(--acc);color:#fff}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}@media(max-width:800px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}.stat span{display:block;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.stat b{font:600 28px 'JetBrains Mono',monospace;display:block}.stat small{color:var(--mut)}
+.red{color:var(--red)}.amber{color:var(--amber)}.green{color:var(--green)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--green);border-radius:14px;padding:14px}
+.card.ok{border-left-color:var(--green)}.card.top{border-left-color:var(--top)}.card.bad{border-left-color:var(--amber)}.card.irr{border-left-color:var(--red);background:color-mix(in srgb,var(--red) 7%,var(--card))}
+.chead{display:flex;justify-content:space-between;gap:8px}.chead small{display:block;color:var(--mut);font-size:12px}
+.pill{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap;height:fit-content;text-transform:uppercase}
+.pill.ok{background:#dcfce7;color:#166534}.pill.top{background:#cffafe;color:#155e75}.pill.bad{background:#fef3c7;color:#92400e}.pill.irr{background:var(--red);color:#fff}
+.big{margin:8px 0 6px}.big b{font:600 30px 'JetBrains Mono',monospace;margin-right:8px}.big span{color:var(--mut);font-size:13px}
+.bar{position:relative;height:8px;background:var(--line);border-radius:99px;margin-bottom:10px}.bar i{position:absolute;inset:0 auto 0 0;background:var(--acc);border-radius:99px}
+.bar em{position:absolute;top:-3px;width:2px;height:14px;background:var(--ink);opacity:.5}
+.card ul{margin:0;padding-left:18px}.card li{margin:3px 0}.card li.x{color:var(--red)}
+.irrtxt{color:var(--red);font-weight:600;margin:4px 0 0}
+.irr-banner{display:flex;gap:16px;align-items:center;background:var(--red);color:#fff;border-radius:14px;padding:18px 20px;margin-bottom:16px;animation:pulse 1.2s infinite}
+.irr-banner h2{margin:0;font-size:24px;letter-spacing:.04em}.irr-banner p{margin:4px 0 0}.siren{font-size:44px}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.6)}50%{box-shadow:0 0 0 12px rgba(220,38,38,0)}}
+.day{display:grid;grid-template-columns:auto 110px 1fr auto;gap:10px;align-items:center;padding:7px 4px;border-top:1px solid var(--line);cursor:pointer}
+.day span{display:flex;flex-wrap:wrap;gap:4px}.day i{font-style:normal;font-size:11px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.day em{font-style:normal;font-size:12px;color:var(--mut)}.day.off{opacity:.55}.day.off em{color:var(--red);font-weight:700}
+.scroll{max-height:460px;overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid var(--line);padding:5px;text-align:center}th small{display:block;color:var(--mut);font-weight:400}
+td{background:color-mix(in srgb,var(--acc) 12%,transparent);font-weight:600}td.e{background:none}
+.tt{overflow-x:auto}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:3px 4px 3px 10px;font-size:13px;margin:0 6px 6px 0}.chip button{border:0;padding:0 6px;background:none}
+details summary{cursor:pointer;font-weight:600}
+code{font-family:'JetBrains Mono',monospace;font-size:12px}
+.charts{display:grid;grid-template-columns:320px 1fr;gap:14px;margin:16px 0}@media(max-width:800px){.charts{grid-template-columns:1fr}}
+.chartbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}.chartbox.wide{grid-column:1/-1}.chartbox h4{margin:0 0 8px;font-size:13px;color:var(--mut);font-weight:600}
+.chartbox svg{width:100%;height:auto;display:block;color:var(--ink)}.gauge{max-width:300px;margin:auto}
+.zones{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:4px}.legend i{display:inline-block;width:14px;height:3px;margin-right:5px;vertical-align:middle}
+.day select{padding:4px 6px;font-size:12px}.day.lv-skip{background:color-mix(in srgb,var(--amber) 12%,transparent)}.day.lv-medical{background:color-mix(in srgb,var(--red) 12%,transparent)}.day.lv-od{background:color-mix(in srgb,var(--green) 12%,transparent)}
+.chip.lv-medical{border-color:var(--red)}.chip.lv-od{border-color:var(--green)}.chip.lv-skip{border-color:var(--amber)}
+#fab{position:fixed;right:22px;bottom:22px;width:62px;height:62px;border-radius:50%;background:var(--acc);color:#fff;border:0;font-size:28px;box-shadow:0 8px 24px rgba(79,70,229,.45);z-index:50}
+#chat{position:fixed;right:22px;bottom:96px;width:min(410px,calc(100vw - 32px));height:min(600px,calc(100vh - 130px));background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.25);display:none;flex-direction:column;z-index:50;overflow:hidden}
+#chat.open{display:flex}.chathead{background:var(--acc);color:#fff;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}.chathead button{background:none;border:0;color:#fff;font-size:20px}
+#chatlog{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.msg{padding:9px 12px;border-radius:12px;max-width:92%;font-size:14px}.msg ul{margin:6px 0;padding-left:18px}.msg li{margin:4px 0}.msg p{margin:4px 0}
+.msg.me{align-self:flex-end;background:var(--acc);color:#fff}.msg.bot{align-self:flex-start;background:var(--bg);border:1px solid var(--line)}
+.msg .ai{background:color-mix(in srgb,var(--acc) 10%,transparent);border-radius:8px;padding:6px 8px;margin-bottom:6px}
+.warn{color:var(--red);font-weight:600}.good{color:var(--green)}button.small{font-size:12px;padding:5px 10px;margin-top:6px}
+.sugg{display:flex;gap:6px;overflow-x:auto;padding:0 12px 8px}.sugg button{font-size:12px;white-space:nowrap;padding:4px 10px;border-radius:99px}
+#chatform{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line)}#chatform input{flex:1}
+</style>
+</head>
+<body><div class="wrap">
+<header>
+  <div><h1>Attendance <span>Predictor</span></h1><p class="sub">Plan every class till 29 Nov 2026 — never fall into detention.</p></div>
+  <div class="muted">Semester: 29 Aug – 29 Nov 2026 · 15 sections</div>
+</header>
+
+<div class="grid2">
+  <div class="panel">
+    <h3>1 · Your section</h3>
+    <select id="section"></select>
+    <p class="muted" id="secinfo"></p>
+    <h3 style="margin-top:14px">2 · Plan until</h3>
+    <div class="row"><input type="date" id="plan">
+      <button data-plan="7">+1 week</button><button data-plan="14">+2 weeks</button><button data-plan="30">+1 month</button><button data-plan="end">Sem end</button></div>
+  </div>
+  <div class="panel">
+    <h3>Holidays (no classes)</h3>
+    <div id="hols"></div>
+    <div class="row"><input type="date" id="holdate"><input id="holname" placeholder="Name" style="width:130px"><button id="addhol">Add</button></div>
+    <details style="margin-top:10px"><summary class="muted">Demo: override today's date/time</summary>
+      <div class="row" style="margin-top:6px"><input type="datetime-local" id="nowov"><button id="nowreset">Use real time</button></div></details>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="row" style="justify-content:space-between"><h3 style="margin:0">3 · Your current attendance</h3>
+    <div class="row"><input id="allpct" type="number" placeholder="% for all" style="width:100px"><button id="fillall">Apply to all</button><button id="reset">Reset</button></div></div>
+  <p class="muted">Enter your portal % — hours held so far are auto-counted from your timetable. Or switch to <b>Count</b> to type exact attended / held hours.</p>
+  <div id="inputs"></div>
+</div>
+
+<div id="alert"></div>
+<div class="stats" id="summary"></div>
+<h3 class="sec-h">Attendance health</h3>
+<div class="charts" id="charts"></div>
+<div class="cards" id="results"></div>
+
+<div class="grid2" style="margin-top:16px">
+  <div class="panel"><h3>OD &amp; Medical leave simulator</h3>
+    <p class="muted">OD = counted present · Medical / Skip = absent. Past OD days get credited back to your attendance.</p>
+    <div class="row"><input type="date" id="lvfrom"> → <input type="date" id="lvto">
+      <select id="lvtype" style="width:auto"><option value="od">On-Duty (OD)</option><option value="medical">Medical leave</option><option value="skip">Skip</option></select>
+      <button class="pri" id="lvadd">Add</button></div>
+    <div id="leavelist" style="margin:10px 0"></div>
+    <div class="scroll" id="upcoming"></div></div>
+  <div class="panel"><h3>Weekly timetable</h3><div class="tt" id="tt"></div>
+    <details style="margin-top:12px"><summary>How it's calculated</summary>
+      <p class="muted">Remaining classes = every timetable hour from now to the date (weekends &amp; holidays removed; today's finished periods don't count).<br>
+      Need for target t: <code>max(0, ⌈t·(held+left) − attended⌉)</code>.<br>
+      Irreversible: <code>(attended+left_sem)/(held+left_sem) &lt; 75%</code> — even perfect attendance can't save it.<br>
+      Safe skips now: <code>⌊attended/0.75 − held⌋</code>.</p></details>
+  </div>
+</div>
+</div>
+<button id="fab" title="Attendance Advisor">💬</button>
+<div id="chat"><div class="chathead"><b>🤖 Attendance Advisor</b><button id="chatx">×</button></div>
+  <div id="chatlog"></div>
+  <div class="sugg"><button data-q="If I take a 3-day sick leave starting tomorrow, will my attendance drop below 75%?">3-day sick leave?</button><button data-q="How many classes can I bunk?">How many can I bunk?</button><button data-q="When will I reach 90%?">Reach 90%?</button><button data-q="How am I doing?">My status</button></div>
+  <form id="chatform"><input id="chatin" placeholder="Ask about your attendance…" autocomplete="off"><button class="pri">Send</button></form></div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body></html>
