@@ -203,10 +203,10 @@ function describeFilters(f, r) {
 }
 function roomCard(x, r) {
   const i = x.info, fu = x.st.freeUntil;
-  return `<div class="rcard"><div class="rtop"><b>${x.room}</b><span class="pill ok">Free</span></div>
+  return `<div class="rcard" data-maproom="${x.room}"><div class="rtop"><b>${x.room}</b><span class="pill ok">Free</span></div>
     <div class="muted">${floorName(x.floor)} · ${building(x.room)}${i.label ? " · " + esc(i.label) : ""}</div>
     <div class="rmeta"><span>${i.ac ? "AC" : "Non-AC"}</span><span>${esc(i.type)}</span><span>~${i.cap} seats</span></div>
-    <div class="rfree">Free ${fu == null ? "for the rest of the day" : "until " + hhmm(fu)}${fu != null && x.st.next ? `<small>Next: ${esc(x.st.next.sec)} · ${esc(x.st.next.subj)}</small>` : ""}</div></div>`;
+    <div class="rfree">Free ${fu == null ? "for the rest of the day" : "until " + hhmm(fu)}${fu != null && x.st.next ? `<small>Next: ${esc(x.st.next.sec)} · ${esc(x.st.next.subj)}</small>` : ""}</div><div class="onmap">Open on map · claim · share →</div></div>`;
 }
 
 async function runRoomSearch(q) {
@@ -284,7 +284,7 @@ function renderRoomEditor() {
 }
 
 function initRooms() {
-  renderGrid(); renderRoomEditor();
+  renderGrid(); renderRoomEditor(); initMap();
   $("#rsearch").onsubmit = e => { e.preventDefault(); runRoomSearch($("#rq").value); };
   document.querySelectorAll("[data-rq]").forEach(b => (b.onclick = () => { $("#rq").value = b.dataset.rq; runRoomSearch(b.dataset.rq); }));
   $("#rdate").onchange = e => { RS.date = e.target.value; renderGrid(); };

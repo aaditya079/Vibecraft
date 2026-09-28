@@ -103,6 +103,36 @@ code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;backgroun
 .gridctl select{width:auto;padding-right:30px;font-size:14px}
 .redit{border-spacing:0}.redit td,.redit th{text-align:left;padding:5px 8px;border-radius:0;background:none;font-weight:400;border-bottom:1px solid var(--line)}.redit select{width:auto;font-size:13px;padding:4px 26px 4px 8px}.redit input[type=number]{padding:4px 8px}
 [hidden]{display:none!important}
+#mapwrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}@media(max-width:900px){#mapwrap{grid-template-columns:1fr}}
+.mapstage{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;position:relative}
+.maptools{position:relative;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 16px 0}
+#mapfloors{display:inline-flex;background:var(--fill);border-radius:9px;padding:2px;flex-wrap:wrap}#mapfloors button{padding:4px 10px;font-size:13px;background:none;border-radius:7px;min-width:32px}#mapfloors button.on{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+#mapstats{position:relative;z-index:5;font-size:13px;padding:8px 16px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.lg{display:inline-block;width:10px;height:10px;border-radius:3px;margin-left:6px}.lg.free{background:var(--mfree)}.lg.soon{background:var(--msoon)}.lg.busy{background:var(--mbusy)}
+:root{--mfree:#34c759;--msoon:#ff9f0a;--mbusy:#ff3b30}
+#map3d{--s:1;--gap:96px;position:relative;height:calc((var(--floors) * 86px + 200px) * var(--s));perspective:2400px;perspective-origin:50% 30%}
+.tower{position:absolute;left:50%;top:calc((var(--floors) * 86px - 60px) * var(--s));width:430px;height:190px;margin-left:-215px;transform-style:preserve-3d;transform:scale(var(--s)) rotateX(62deg) rotateZ(-34deg);transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.slab{position:absolute;inset:0;transform-style:preserve-3d;transform:translateZ(calc(var(--i) * var(--gap)));transition:opacity .3s,transform .4s}
+.slab.dim{opacity:.12;pointer-events:none}.slab.focus{transform:translateZ(calc(var(--i) * var(--gap) + 20px))}
+.slabtop{position:absolute;inset:0;border-radius:12px;background:color-mix(in srgb,var(--card) 55%,transparent);backdrop-filter:blur(1px);box-shadow:inset 0 0 0 1px var(--line),0 18px 30px -18px rgba(0,0,0,.35);transform-style:preserve-3d}
+.slab:hover .slabtop{background:var(--card)}
+.corridor{position:absolute;left:44px;right:10px;top:84px;height:22px;border-radius:4px;background:color-mix(in srgb,var(--mut) 12%,transparent)}
+.flabel{position:absolute;left:8px;top:74px;width:28px;height:40px;display:grid;place-items:center;font-weight:700;font-size:18px;color:var(--mut)}
+.room{position:absolute;left:calc(46px + var(--c) * 92px);top:calc(10px + var(--r) * 104px);width:84px;height:66px;border-radius:8px;padding:0;color:#fff;font-weight:700;font-size:15px;transform:translateZ(8px);transition:transform .2s,box-shadow .2s;box-shadow:0 6px 0 -1px rgba(0,0,0,.25);display:grid;place-items:center}
+.room:hover{transform:translateZ(18px);opacity:1}.room.sel{transform:translateZ(26px);box-shadow:0 0 0 3px var(--ink),0 10px 0 -1px rgba(0,0,0,.3)}
+.room.free{background:var(--mfree)}.room.soon{background:var(--msoon)}.room.busy{background:var(--mbusy)}
+.room.claimed{outline:3px solid var(--acc);outline-offset:2px}.pin{position:absolute;top:-6px;right:-6px;width:14px;height:14px;border-radius:50%;background:var(--acc);border:2px solid #fff}
+#mapwrap.flat #map3d{height:auto;perspective:none;padding:10px 0}#mapwrap.flat .tower{position:relative;left:auto;top:auto;margin:0 auto;transform:none;height:auto;display:flex;flex-direction:column-reverse;gap:10px}
+#mapwrap.flat .slab{position:relative;height:190px;transform:none}#mapwrap.flat .slab.dim{display:none}
+#mappanel{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:20px;position:sticky;top:16px}
+.phead{display:flex;justify-content:space-between;align-items:flex-start}.phead h3{margin:0;font-size:26px;letter-spacing:-.02em}.x{width:28px;height:28px;padding:0;border-radius:50%;color:var(--mut)}
+.count{border-radius:14px;padding:16px;margin:14px 0}.count small{color:var(--mut);font-size:13px}.count b{display:block;font-size:44px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}.count p{margin:6px 0 0;font-size:14px}
+.count.free{background:color-mix(in srgb,var(--green) 12%,transparent)}.count.free b{color:var(--green)}.count.soon{background:color-mix(in srgb,var(--amber) 12%,transparent)}.count.soon b{color:var(--amber)}.count.busy{background:color-mix(in srgb,var(--red) 10%,transparent)}.count.busy b{color:var(--red)}
+button.big{width:100%;padding:12px;font-size:16px}
+.wa{display:flex;gap:8px;justify-content:center;align-items:center;background:#25d366;color:#fff;text-decoration:none;font-weight:600;border-radius:980px;padding:11px 16px;margin-top:8px}.wa:hover{opacity:.9}
+.claimed-box{background:var(--fill);border-radius:14px;padding:14px}.claimed-box p{margin:4px 0}.msgprev{font-size:13px;background:var(--card);border-radius:10px;padding:8px 10px;margin-top:10px!important}
+.pempty p{margin:6px 0 0}
+.rcard{cursor:pointer}.rcard:hover{box-shadow:inset 0 0 0 1.5px var(--acc),var(--shadow)}.rcard .onmap{font-size:12px;color:var(--acc);margin-top:6px}
+
 </style>
 </head>
 <body><div class="wrap">
@@ -173,6 +203,15 @@ code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;backgroun
     <button data-rq="Room on the 6th floor tomorrow at 10am for 3 hours for a group of 8">6th floor, tomorrow 10 AM</button>
   </div>
   <div id="rresult"></div>
+  <h2 class="sec-h" id="mapsec">Building map</h2>
+  <div id="mapwrap">
+    <div class="mapstage">
+      <div class="maptools"><div id="mapfloors"></div><button id="maptilt">Top view</button></div>
+      <div id="mapstats"></div>
+      <div id="map3d"></div>
+    </div>
+    <aside id="mappanel"></aside>
+  </div>
   <h2 class="sec-h">Floor by floor</h2>
   <div class="gridctl">
     <input type="date" id="rdate"><input type="time" id="rtime" step="300">
@@ -196,4 +235,5 @@ code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;backgroun
 <script src="data.js"></script>
 <script src="app.js"></script>
 <script src="rooms.js"></script>
+<script src="map3d.js"></script>
 </body></html>
