@@ -1,3 +1,5 @@
+// Fast "lite" models first (big models are often overloaded); falls through on 503/404.
+const GEMINI_MODELS = [process.env.GEMINI_MODEL, "gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"].filter(Boolean);
 // Attendance Advisor AI layer. The app computes exact numbers; the model only phrases advice.
 // Set GEMINI_API_KEY (or ANTHROPIC_API_KEY) in Vercel env vars.
 export default async function handler(req, res) {
@@ -9,7 +11,7 @@ export default async function handler(req, res) {
   try {
     if (process.env.GEMINI_API_KEY) {
       // try newest models first; fall back if one is retired
-      const models = [process.env.GEMINI_MODEL, "gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"].filter(Boolean);
+      const models = GEMINI_MODELS;
       let lastErr = "";
       for (const m of models) {
         const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
@@ -45,7 +47,7 @@ async function parseRooms(q, res) {
 Return ONLY JSON with keys: floor (0=ground,1=first,...; null if not said), ac (true/false/null), type ("Lab"|"Seminar / CDC"|"Classroom"|"Workshop"|null),
 people (integer; "me and my team" = 5, "me and a friend" = 2; null if unknown), duration (minutes; "rest of the day" = "eod"; null if not said),
 start (minutes after midnight, 24h; null means now), day ("tomorrow" or 3-letter weekday lowercase like "wed"; null = today), quiet (true if they want quiet/study).`;
-  const models = [process.env.GEMINI_MODEL, "gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"].filter(Boolean);
+  const models = GEMINI_MODELS;
   for (const m of models) {
     try {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
