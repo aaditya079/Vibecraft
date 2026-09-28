@@ -7,13 +7,20 @@ export default async function handler(req, res) {
   const prompt = `CONTEXT: ${JSON.stringify(context)}\nCOMPUTED: ${computed}\nQUESTION: ${question}`;
   try {
     if (process.env.GEMINI_API_KEY) {
-      const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
-        method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }] }),
-      });
-      const j = await r.json();
-      const reply = j.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
-      return reply ? res.json({ reply }) : res.status(502).json({ error: j.error?.message || "empty" });
+      // try newest models first; fall back if one is retired
+      const models = [process.env.GEMINI_MODEL, "gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"].filter(Boolean);
+      let lastErr = "";
+      for (const m of models) {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+          method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
+          body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: prompt }] }] }),
+        });
+        const j = await r.json();
+        const reply = j.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
+        if (reply) return res.json({ reply, model: m });
+        lastErr = j.error?.message || "empty";
+      }
+      return res.status(502).json({ error: lastErr });
     }
     if (process.env.ANTHROPIC_API_KEY) {
       const r = await fetch("https://api.anthropic.com/v1/messages", {
