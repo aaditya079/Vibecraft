@@ -381,6 +381,10 @@ async function askLLM(q, localHtml) { // optional: Vercel /api/chat with ANTHROP
   } catch { return null; }
 }
 
+function greetChat() {
+  chatMsg(`Hi — I'm your Attendance Advisor. I'm reading your live dashboard for <b>${esc(sec().name)}</b> and I do the math for you.<br><span class="muted">Ask e.g. "If I take a 3-day sick leave starting tomorrow, will my attendance drop below 75%?"</span>`, "bot");
+}
+function resetChat() { $("#chatlog").innerHTML = ""; if ($("#chat").classList.contains("open")) greetChat(); }
 function chatMsg(html, who, leave) {
   const el = document.createElement("div"); el.className = "msg " + who; el.innerHTML = html;
   if (leave) { const b = document.createElement("button"); b.className = "pri small"; b.textContent = "Add to leave plan";
@@ -415,7 +419,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => { initRooms(); try { const t = localStorage.getItem("vc_tab"); if (t === "rooms") document.querySelector('[data-tab="rooms"]').click(); } catch {} }, 0);
   $("#themebtn").onclick = () => { const t = isDark() ? "light" : "dark"; document.documentElement.dataset.theme = t;
     try { localStorage.setItem("vc_theme", t); } catch {} paintThemeBtn(); renderResults(); };
-  $("#section").onchange = e => { S.secId = e.target.value; S.leaves = {}; save(); renderAll(); };
+  $("#section").onchange = e => { S.secId = e.target.value; S.leaves = {}; save(); renderAll(); resetChat(); };
   $("#plan").onchange = e => { S.planDate = e.target.value || SEMESTER.end; save(); renderResults(); };
   document.querySelectorAll("[data-plan]").forEach(b => (b.onclick = () => {
     const v = b.dataset.plan;
@@ -447,9 +451,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#nowov").onchange = e => { S.nowOverride = e.target.value; save(); renderAll(); };
   $("#nowreset").onclick = () => { S.nowOverride = ""; save(); renderAll(); };
   // chat
-  $("#fab").onclick = () => { $("#chat").classList.toggle("open"); if (!$("#chatlog").children.length)
-    chatMsg(`Hi — I'm your Attendance Advisor. I read your live dashboard (${esc(sec().name)}) and do the math for you.<br><span class="muted">Ask e.g. "If I take a 3-day sick leave starting tomorrow, will my attendance drop below 75%?"</span>`, "bot");
-    $("#chatin").focus(); };
+  $("#fab").onclick = () => { $("#chat").classList.toggle("open"); if (!$("#chatlog").children.length) greetChat(); $("#chatin").focus(); };
   $("#chatx").onclick = () => $("#chat").classList.remove("open");
   $("#chatform").onsubmit = e => { e.preventDefault(); const q = $("#chatin").value; $("#chatin").value = ""; onAsk(q); };
   document.querySelectorAll("[data-q]").forEach(b => (b.onclick = () => onAsk(b.dataset.q)));
