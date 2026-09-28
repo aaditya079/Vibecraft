@@ -4,8 +4,8 @@ try { MAP.claim = JSON.parse(localStorage.getItem("vc_claim")) || null; } catch 
 
 // live clock for the map (follows "Simulate a different date" if set, and keeps ticking)
 function mapNow() {
-  if (S.nowOverride !== MAP.ovr) { MAP.ovr = S.nowOverride; MAP.offset = S.nowOverride ? new Date(S.nowOverride) - Date.now() : 0; }
-  return new Date(Date.now() + MAP.offset);
+  if (S.nowOverride !== MAP.ovr) { MAP.ovr = S.nowOverride; MAP.offset = S.nowOverride ? new Date(S.nowOverride) - istNow() : 0; }
+  return new Date(istNow().getTime() + MAP.offset);
 }
 const secOfDay = d => d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
 const clock = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h ? h + ":" + pad(m) : m) + ":" + pad(x); };
@@ -45,7 +45,7 @@ function renderMap() {
       <div class="slabtop"><span class="flabel">${f === 0 ? "G" : f}</span>
       <div class="corridor"></div>
       ${rooms.map((r, j) => { const st = liveStatus(r); counts[st.state]++;
-        const row = j % 2, col = Math.floor(j / 2);
+        const row = 1 - (j % 2), col = Math.floor(j / 2); // fill the front row first so no room hides behind the floor above
         const claimed = MAP.claim && MAP.claim.room === r && MAP.claim.date === ymd(n);
         return `<button class="room ${st.state}${MAP.sel === r ? " sel" : ""}${claimed ? " claimed" : ""}" style="--r:${row};--c:${col}" data-room="${r}" title="${r}">
           <span class="rlab">${r.replace("IST ", "")}</span>${claimed ? '<i class="pin"></i>' : ""}</button>`; }).join("")}

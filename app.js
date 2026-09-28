@@ -19,7 +19,8 @@ function sessions(sec, from, to, holidays) {
   return out;
 }
 const isPast = (c, now) => new Date(`${c.date}T${c.end}:00`) <= now;
-const need = (A, H, R, t) => Math.max(0, Math.ceil((t * (H + R) - 100 * A) / 100));
+const EPS = 1e-9; // attended can be fractional in % mode (e.g. 80% of 3 hrs = 2.4) so the shown % equals what the student typed
+const need = (A, H, R, t) => Math.max(0, Math.ceil((t * (H + R) - 100 * A) / 100 - EPS));
 const pct = (A, H) => (H ? (A / H) * 100 : 100);
 
 function analyse({ sec, now, planDate, holidays, inputs, leaves }) {
@@ -32,7 +33,7 @@ function analyse({ sec, now, planDate, holidays, inputs, leaves }) {
     const exact = inp.mode === "exact";
     const entered = exact ? inp.att !== "" && inp.att != null : inp.pct !== "" && inp.pct != null;
     const H = exact && inp.held !== "" && inp.held != null ? +inp.held : heldTT;
-    let A = Math.min(H, exact ? +(inp.att || 0) : Math.round(((+inp.pct || 0) / 100) * H));
+    let A = Math.max(0, Math.min(H, exact ? Math.floor(+(inp.att || 0)) : (Math.min(100, Math.max(0, +inp.pct || 0)) / 100) * H));
     // OD simulator: past OD days are credited back as present
     const odPast = past.filter(c => c.subj === k && leaves[c.date] === "od").length;
     const A0 = A; A = Math.min(H, A + odPast);
@@ -41,7 +42,7 @@ function analyse({ sec, now, planDate, holidays, inputs, leaves }) {
     const R = futP.length, RS = fut.length;
     const cur = pct(A, H);
     const maxPct = pct(A + RS, H + RS);
-    const streak = t => (cur >= t ? 0 : Math.ceil((t * H - 100 * A) / (100 - t)));
+    const streak = t => (cur >= t - EPS ? 0 : Math.ceil((t * H - 100 * A) / (100 - t) - EPS));
     const s75 = streak(75), s90 = streak(90);
     const reach = n => (n === 0 ? null : fut[n - 1] ? fut[n - 1].date : "never");
     const absent = c => leaves[c.date] === "skip" || leaves[c.date] === "medical";
@@ -50,7 +51,7 @@ function analyse({ sec, now, planDate, holidays, inputs, leaves }) {
     res[k] = { k, entered, H, A, A0, odPast, odFut, heldTT, cur, R, RS, fut,
       n75: need(A, H, R, 75), n90: need(A, H, R, 90), maxPct, irreversible: maxPct < 75,
       s75, s90, reach75: reach(s75), reach90: reach(s90),
-      bunk: cur >= 75 ? Math.floor((100 * A - 75 * H) / 75) : 0,
+      bunk: cur >= 75 - EPS ? Math.floor((100 * A - 75 * H) / 75 + EPS) : 0,
       missP, missS, projPlan: pct(A + R - missP, H + R), projEnd: pct(A + RS - missS, H + RS) };
   }
   const rs = Object.values(res).filter(r => r.entered), sum = f => rs.reduce((a, r) => a + f(r), 0);
@@ -82,13 +83,16 @@ const S = {
 const save = () => { store.set("sec", S.secId); store.set("plan", S.planDate); store.set("hol", S.holidays);
   store.set("inp", S.inputs); store.set("lv", S.leaves); store.set("now", S.nowOverride); };
 const sec = () => SECTIONS.find(s => s.id === S.secId);
-const now = () => (S.nowOverride ? new Date(S.nowOverride) : new Date());
+// All times are college time (IST, UTC+5:30) whatever timezone the viewer's device is set to.
+const istNow = () => { const d = new Date(); return new Date(d.getTime() + (330 + d.getTimezoneOffset()) * 60000); };
+const now = () => (S.nowOverride ? new Date(S.nowOverride) : istNow());
 const secInputs = () => (S.inputs[S.secId] ||= {});
 const run = (leaves = S.leaves) => analyse({ sec: sec(), now: now(), planDate: S.planDate, holidays: S.holidays, inputs: secInputs(), leaves });
 
 // ═════════════ UI ═════════════
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const hrs = x => (Math.abs(x - Math.round(x)) < 1e-6 ? String(Math.round(x)) : "≈" + x.toFixed(1));
 const p1 = x => (Math.round(x * 10) / 10).toFixed(1);
 const short = n => n.replace(/\(.*?\)/g, "").split(/\s+/).filter(w => w.length > 2 && !/^(and|for|the|its)$/i.test(w)).map(w => w[0]).join("").toUpperCase().slice(0, 5);
 const col = p => (p < 75 ? "var(--red)" : p < 90 ? "var(--amber)" : "var(--green)");
@@ -137,7 +141,7 @@ function renderResults() {
     <div class="stat"><span>Today</span><b>${now().toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</b><small>${now().toLocaleDateString("en-IN", { weekday: "long" })}, ${now().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</small></div>
     <div class="stat"><span>Classes left (sem)</span><b>${o.RS}</b><small>till ${fmt(SEMESTER.end)}</small></div>
     <div class="stat"><span>Classes left till plan date</span><b>${o.R}</b><small>${planTxt}</small></div>
-    <div class="stat"><span>Overall attendance</span><b style="color:${col(o.cur)}">${filled ? p1(o.cur) + "%" : "—"}</b><small>${o.A}/${o.H} hours</small></div>`;
+    <div class="stat"><span>Overall attendance</span><b style="color:${col(o.cur)}">${filled ? p1(o.cur) + "%" : "—"}</b><small>${hrs(o.A)}/${o.H} hours</small></div>`;
 
   const pending = allRs.filter(r => !r.entered);
   $("#results").innerHTML = (filled ? "" : `<p class="muted">Enter your attendance above to see your plan.</p>`) + rs.map(r => {
@@ -149,7 +153,7 @@ function renderResults() {
     };
     return `<div class="card ${cls}">
       <div class="chead"><div><b>${esc(sub.name)}</b><small>${sub.code}</small></div><span class="pill ${cls}">${lbl}</span></div>
-      <div class="big"><b>${p1(r.cur)}%</b><span>${r.A}/${r.H} attended${r.odPast ? ` (incl. ${r.odPast} OD)` : ""} · ${r.RS} left in sem</span></div>
+      <div class="big"><b>${p1(r.cur)}%</b><span>${hrs(r.A)}/${r.H} attended${r.odPast ? ` (incl. ${r.odPast} OD)` : ""} · ${r.RS} left in sem</span></div>
       <div class="bar"><i style="width:${Math.min(100, r.cur)}%;background:${col(r.cur)}"></i><em style="left:75%"></em><em style="left:90%"></em></div>
       ${r.irreversible
         ? `<p class="irrtxt">Max possible: ${p1(r.maxPct)}% even at 100% from now. 75% is mathematically out of reach.</p>`
@@ -419,6 +423,13 @@ document.addEventListener("DOMContentLoaded", () => {
     save(); renderAll();
   }));
   $("#inputs").addEventListener("input", e => { const k = e.target.dataset.k, f = e.target.dataset.f; if (!k || !f) return;
+    // validation: % must be 0–100, counts must be whole, attended ≤ held
+    const v = e.target.value, n = +v, row = secInputs()[k] || {};
+    let bad = v !== "" && (!isFinite(n) || n < 0 || (f === "pct" && n > 100) || (f !== "pct" && !Number.isInteger(n)));
+    if (!bad && f === "att" && v !== "" && row.held !== "" && row.held != null && n > +row.held) bad = true;
+    if (!bad && f === "held" && v !== "" && row.att !== "" && row.att != null && +row.att > n) bad = true;
+    e.target.classList.toggle("bad", bad);
+    e.target.title = bad ? (f === "pct" ? "Enter a percentage between 0 and 100" : "Use whole numbers, and attended can't exceed held") : "";
     (secInputs()[k] ||= {})[f] = e.target.value; save(); renderResults(); });
   $("#inputs").addEventListener("click", e => { const k = e.target.dataset.k, m = e.target.dataset.mode; if (!k || !m) return;
     (secInputs()[k] ||= {}).mode = m; save(); renderInputs(); renderResults(); });

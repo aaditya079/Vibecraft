@@ -4,10 +4,16 @@ const GEMINI_MODELS = [process.env.GEMINI_MODEL, "gemini-3.5-flash-lite", "gemin
 // Set GEMINI_API_KEY (or ANTHROPIC_API_KEY) in Vercel env vars.
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { question, context, computed, mode } = req.body || {};
+  const body = req.body || {};
+  const mode = body.mode;
+  // cap inputs so a bad client can't send huge prompts
+  const question = String(body.question || "").slice(0, 500);
+  const computed = String(body.computed || "").slice(0, 3000);
+  let context = {};
+  try { context = JSON.stringify(body.context || {}).length <= 6000 ? body.context || {} : { note: "context too large" }; } catch {}
   if (mode === "parse") return parseRooms(question, res);
-  const system = "You are a friendly college Attendance Advisor. Answer in 2-4 short sentences. Use ONLY the numbers in COMPUTED/CONTEXT; never invent or recalculate numbers. Give a clear verdict and one practical tip.";
-  const prompt = `CONTEXT: ${JSON.stringify(context)}\nCOMPUTED: ${computed}\nQUESTION: ${question}`;
+  const system = "You are a friendly college Attendance Advisor. The COMPUTED block is the exact, already-calculated answer from the student's dashboard. Rewrite it as 2-4 short, plain sentences: first the verdict (safe / risky / below 75%), then the key numbers, then one practical tip. Copy every number EXACTLY as written in COMPUTED — never recalculate, round differently, swap 'now' and 'after' values, or invent numbers. If COMPUTED says a value drops below 75%, you must say so.";
+  const prompt = `QUESTION: ${question}\n\nCOMPUTED (exact, trust this): ${computed}\n\nCONTEXT: ${JSON.stringify(context)}`;
   try {
     if (process.env.GEMINI_API_KEY) {
       // try newest models first; fall back if one is retired
