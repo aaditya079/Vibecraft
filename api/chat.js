@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   let context = {};
   try { context = JSON.stringify(body.context || {}).length <= 6000 ? body.context || {} : { note: "context too large" }; } catch {}
   if (mode === "parse") return parseRooms(question, res);
-  const system = "You are a friendly college Attendance Advisor. The COMPUTED block is the exact, already-calculated answer from the student's dashboard. Rewrite it as 2-4 short, plain sentences: first the verdict (safe / risky / below 75%), then the key numbers, then one practical tip. Copy every number EXACTLY as written in COMPUTED — never recalculate, round differently, swap 'now' and 'after' values, or invent numbers. If COMPUTED says a value drops below 75%, you must say so.";
+  const system = "You are a college Attendance Advisor. COMPUTED is the exact answer from the student's dashboard. Reply in AT MOST 2 short sentences (under 35 words total): the verdict, then the single most important number or action. Copy numbers exactly from COMPUTED; never invent or recalculate. No lists, no greetings.";
   const prompt = `QUESTION: ${question}\n\nCOMPUTED (exact, trust this): ${computed}\n\nCONTEXT: ${JSON.stringify(context)}`;
   try {
     if (process.env.GEMINI_API_KEY) {

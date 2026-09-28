@@ -106,6 +106,14 @@ code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;backgroun
 .gridctl select{width:auto;padding-right:30px;font-size:14px}
 .redit{border-spacing:0}.redit td,.redit th{text-align:left;padding:5px 8px;border-radius:0;background:none;font-weight:400;border-bottom:1px solid var(--line)}.redit select{width:auto;font-size:13px;padding:4px 26px 4px 8px}.redit input[type=number]{padding:4px 8px}
 [hidden]{display:none!important}
+#alert .irr-banner,#summary{margin:0 0 16px}
+.inrow{display:grid;grid-template-columns:minmax(180px,1.2fr) auto minmax(220px,1fr);align-items:center}
+@media(max-width:900px){.inrow{grid-template-columns:1fr}.inres{padding-left:0!important}}
+.inres{padding-left:12px;font-size:13px;line-height:1.35}.inres b{font-weight:600}
+.inres .st{display:inline-block;font-size:11px;font-weight:600;border-radius:980px;padding:1px 8px;margin-right:6px}
+.inres .st.top{background:color-mix(in srgb,var(--top) 15%,transparent);color:var(--top)}.inres .st.ok{background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green)}
+.inres .st.bad{background:color-mix(in srgb,var(--amber) 15%,transparent);color:var(--amber)}.inres .st.irr{background:var(--red);color:#fff}
+.inres small{display:block;color:var(--mut)}
 .tabs{position:sticky;top:12px;z-index:40;backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);background:color-mix(in srgb,var(--fill) 85%,transparent);box-shadow:0 2px 12px rgba(0,0,0,.06)}
 #tab-att:not([hidden]),#tab-rooms:not([hidden]){animation:fadein .25s ease-out}@keyframes fadein{from{opacity:0;transform:translateY(4px)}}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
@@ -173,6 +181,8 @@ button.big{width:100%;padding:12px;font-size:16px}
   </div>
 </div>
 
+<div id="alert"></div>
+<div class="stats" id="summary"></div>
 <div class="panel">
   <div class="row" style="justify-content:space-between"><h3 style="margin:0">Current attendance</h3>
     <div class="row"><input id="allpct" type="number" placeholder="Same % for all" style="width:140px"><button id="fillall">Apply to all</button><button id="reset">Reset</button></div></div>
@@ -180,8 +190,6 @@ button.big{width:100%;padding:12px;font-size:16px}
   <div id="inputs"></div>
 </div>
 
-<div id="alert"></div>
-<div class="stats" id="summary"></div>
 <h2 class="sec-h">Overview</h2>
 <div class="charts" id="charts"></div>
 <h2 class="sec-h">By subject</h2>

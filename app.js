@@ -100,7 +100,7 @@ function status(r) {
   if (r.irreversible) return ["irr", "Irreversible detention"];
   if (r.cur < 75) return ["bad", "Detention zone"];
   if (r.cur < 90) return ["ok", "Safe"];
-  return ["top", "90%+"];
+  return ["top", "Excellent"];
 }
 
 function renderSectionPicker() {
@@ -170,7 +170,7 @@ function renderResults() {
     const [cls, lbl] = status(r);
     el.innerHTML = r.irreversible
       ? `<span class="st irr">Irreversible</span><b>${p1(r.cur)}%</b> · max possible ${p1(r.maxPct)}%<small>Can't reach 75% even attending all ${r.RS} left</small>`
-      : `<span class="st ${cls}">${lbl}</span><b>${p1(r.cur)}%</b> · attend <b>${Math.min(r.n75, r.R)}</b>/${r.R} for 75%${r.n75 > r.R ? " (not enough left)" : ""}
+      : `<span class="st ${cls}">${lbl}</span><b>${p1(r.cur)}%</b> now · attend <b>${Math.min(r.n75, r.R)}</b>/${r.R} for 75%${r.n75 > r.R ? " (not enough left)" : ""}
          <small>${r.n90 <= r.R ? `${r.n90}/${r.R} for 90%` : "90% not reachable by " + planShort}${r.cur >= 75 ? ` · can skip ${r.bunk} now` : r.s75 ? ` · ${r.s75} in a row to recover` : ""}</small>`;
   });
   renderCharts(a, filled);
