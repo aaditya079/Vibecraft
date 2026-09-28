@@ -167,7 +167,9 @@ button.big{width:100%;padding:12px;font-size:16px}
     <div id="hols"></div>
     <div class="row"><input type="date" id="holdate"><input id="holname" placeholder="Name" style="width:130px"><button id="addhol">Add</button></div>
     <details style="margin-top:10px"><summary>Simulate a different date</summary>
-      <div class="row" style="margin-top:6px"><input type="datetime-local" id="nowov"><button id="nowreset">Use real time</button></div></details>
+      <div class="row" style="margin-top:8px"><input type="date" id="simdate" min="2026-08-29" max="2026-11-29"><input type="time" id="simtime" step="300"><button class="pri" id="simapply">Apply</button><button id="nowreset">Use real time</button></div>
+      <div class="row" style="margin-top:8px"><span class="muted">Quick:</span><button data-sim="mon-1350">Mon 1:50 PM</button><button data-sim="tue-1000">Tue 10:00 AM</button><button data-sim="wed-1130">Wed 11:30 AM</button></div>
+      <p class="muted" id="simstatus" style="margin:8px 0 0"></p></details>
   </div>
 </div>
 

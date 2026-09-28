@@ -122,7 +122,7 @@ function renderInputs() {
         ${exact
           ? `<input type="number" min="0" data-k="${k}" data-f="att" value="${i.att ?? ""}" placeholder="attended"> / <input type="number" min="0" data-k="${k}" data-f="held" value="${i.held ?? ""}" placeholder="${r.heldTT}">`
           : `<input type="number" min="0" max="100" step="0.1" data-k="${k}" data-f="pct" value="${i.pct ?? ""}" placeholder="e.g. 80"> <span class="muted">% of ${r.heldTT} held</span>`}
-      </div></div>`;
+      </div><div class="inres" data-res="${k}"></div></div>`;
   }).join("");
 }
 
@@ -163,6 +163,16 @@ function renderResults() {
     </div>`;
   }).join("") + (filled && pending.length ? `<div class="card"><b>Not entered yet</b><p class="muted">${pending.map(r => esc(s.subjects[r.k].name)).join(", ")} — add their % above to include them.</p></div>` : "");
 
+  // quick result next to each input — no scrolling needed
+  const planShort = S.planDate === SEMESTER.end ? "sem end" : fmt(S.planDate);
+  document.querySelectorAll("[data-res]").forEach(el => {
+    const r = a.res[el.dataset.res]; if (!r || !r.entered) { el.innerHTML = `<small>Enter your % to see your plan</small>`; return; }
+    const [cls, lbl] = status(r);
+    el.innerHTML = r.irreversible
+      ? `<span class="st irr">Irreversible</span><b>${p1(r.cur)}%</b> · max possible ${p1(r.maxPct)}%<small>Can't reach 75% even attending all ${r.RS} left</small>`
+      : `<span class="st ${cls}">${lbl}</span><b>${p1(r.cur)}%</b> · attend <b>${Math.min(r.n75, r.R)}</b>/${r.R} for 75%${r.n75 > r.R ? " (not enough left)" : ""}
+         <small>${r.n90 <= r.R ? `${r.n90}/${r.R} for 90%` : "90% not reachable by " + planShort}${r.cur >= 75 ? ` · can skip ${r.bunk} now` : r.s75 ? ` · ${r.s75} in a row to recover` : ""}</small>`;
+  });
   renderCharts(a, filled);
   renderUpcoming(a);
   renderLeaveList();
@@ -247,7 +257,9 @@ function renderAll() {
   renderSectionPicker(); renderInputs(); renderResults(); renderTT(); renderHolidays();
   $("#plan").value = S.planDate; $("#plan").max = SEMESTER.end;
   $("#plan").min = ymd(now()) < SEMESTER.start ? SEMESTER.start : ymd(now());
-  $("#nowov").value = S.nowOverride;
+  { const o = S.nowOverride, d = o ? new Date(o) : now();
+    $("#simdate").value = ymd(d); $("#simtime").value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    $("#simstatus").innerHTML = o ? `<b style="color:var(--amber)">Simulating</b> ${d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}, ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} — everything (attendance, rooms, map) uses this time.` : "Using the real current time (IST)."; }
 }
 
 // ═════════════ ATTENDANCE ADVISOR (chatbot) ═════════════
@@ -448,8 +460,14 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#lvadd").onclick = () => { const f = $("#lvfrom").value, t = $("#lvto").value || f; if (!f) return; addLeaveRange(f, t < f ? f : t, $("#lvtype").value); };
   $("#hols").addEventListener("click", e => { const i = e.target.dataset.delhol; if (i == null) return; S.holidays.splice(+i, 1); save(); renderAll(); });
   $("#addhol").onclick = () => { const d = $("#holdate").value; if (!d) return; S.holidays.push({ date: d, name: $("#holname").value || "Holiday" }); save(); renderAll(); };
-  $("#nowov").onchange = e => { S.nowOverride = e.target.value; save(); renderAll(); };
-  $("#nowreset").onclick = () => { S.nowOverride = ""; save(); renderAll(); };
+  const setSim = v => { S.nowOverride = v; save(); renderAll(); if (typeof renderGrid === "function") { renderGrid(); renderMap(); renderPanel(); } };
+  $("#simapply").onclick = () => { const d = $("#simdate").value, t = $("#simtime").value || "10:00"; if (d) setSim(`${d}T${t}`); };
+  document.querySelectorAll("[data-sim]").forEach(b => (b.onclick = () => {
+    const [day, hm] = b.dataset.sim.split("-"), target = ["sun","mon","tue","wed","thu","fri","sat"].indexOf(day);
+    const d = parseYmd(ymd(istNow())); while (d.getDay() !== target) d.setDate(d.getDate() + 1);
+    setSim(`${ymd(d)}T${hm.slice(0, 2)}:${hm.slice(2)}`);
+  }));
+  $("#nowreset").onclick = () => setSim("");
   // chat
   $("#fab").onclick = () => { $("#chat").classList.toggle("open"); if (!$("#chatlog").children.length) greetChat(); $("#chatin").focus(); };
   $("#chatx").onclick = () => $("#chat").classList.remove("open");
