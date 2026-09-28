@@ -192,14 +192,14 @@ function renderCharts(a, filled) {
     <text x="100" y="88" text-anchor="middle" font-size="26" font-weight="700" fill="currentColor" font-family="JetBrains Mono">${p1(o.cur)}%</text>
     <text x="100" y="106" text-anchor="middle" font-size="9" fill="currentColor" opacity=".7">now → ${p1(o.projEnd)}% at sem end</text></svg>`;
   // 2. per-subject bars: current (bar) vs projected end (dot)
-  const W = 520, rowH = 26, left = 70, bw = W - left - 20, H2 = rs.length * rowH + 30;
+  const W = 560, rowH = 26, left = 70, bw = W - left - 60, H2 = rs.length * rowH + 30;
   const x = p => left + (bw * Math.max(0, Math.min(100, p))) / 100;
   const bars = `<svg viewBox="0 0 ${W} ${H2}" class="bars">
     ${[0, 25, 50, 75, 90, 100].map(p => `<line x1="${x(p)}" y1="4" x2="${x(p)}" y2="${H2 - 22}" stroke="${p === 75 ? "var(--red)" : p === 90 ? "var(--green)" : "var(--line)"}" stroke-dasharray="${p === 75 || p === 90 ? "4 3" : ""}"/><text x="${x(p)}" y="${H2 - 8}" font-size="10" text-anchor="middle" fill="currentColor" opacity=".6">${p}%</text>`).join("")}
     ${rs.map((r, i) => { const y = 8 + i * rowH; return `<g><title>${esc(s.subjects[r.k].name)}: now ${p1(r.cur)}%, projected ${p1(r.projEnd)}%</title>
       <text x="${left - 6}" y="${y + 13}" font-size="11" text-anchor="end" fill="currentColor">${esc(short(s.subjects[r.k].name))}</text>
       <rect x="${left}" y="${y + 3}" width="${Math.max(2, x(r.cur) - left)}" height="12" rx="6" fill="${r.cur < 75 ? "var(--red)" : "var(--acc)"}" opacity="${r.cur < 90 ? .75 : 1}"/>
-      <circle cx="${x(r.projEnd)}" cy="${y + 9}" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="1.5"/></g>`; }).join("")}</svg>`;
+      <circle cx="${x(r.projEnd)}" cy="${y + 9}" r="4.5" fill="var(--card)" stroke="currentColor" stroke-width="1.5"/><text x="${x(r.projEnd) + 8}" y="${y + 13}" font-size="10" fill="currentColor" opacity=".75">${Math.round(r.projEnd)}%</text></g>`; }).join("")}</svg>`;
   // 3. projection line over time
   const L = a.line, LW = 960, LH = 240, pl = 34, pb = 22;
   const lo = Math.max(0, Math.floor(Math.min(...L.map(p => Math.min(p.all, p.plan)), 70) / 10) * 10);
@@ -220,7 +220,7 @@ function renderCharts(a, filled) {
       <div class="legend">
         <span><i style="background:var(--acc);height:8px;border-radius:4px"></i>Current % (75% or above)</span>
         <span><i style="background:var(--red);height:8px;border-radius:4px"></i>Current % (below 75%)</span>
-        <span><i style="width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink);background:none"></i>Projected at semester end</span>
+        <span><i style="width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink);background:none"></i>Your % on 29 Nov if you attend every remaining class (minus any leave you planned)</span>
         <span><i style="background:repeating-linear-gradient(90deg,var(--red) 0 4px,transparent 4px 7px)"></i>75% minimum</span>
         <span><i style="background:repeating-linear-gradient(90deg,var(--green) 0 4px,transparent 4px 7px)"></i>90% target</span>
       </div>
