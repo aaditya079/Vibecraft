@@ -92,7 +92,7 @@ const run = (leaves = S.leaves) => analyse({ sec: sec(), now: now(), planDate: S
 // ═════════════ UI ═════════════
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const hrs = x => (Math.abs(x - Math.round(x)) < 1e-6 ? String(Math.round(x)) : "≈" + x.toFixed(1));
+const hrs = x => (Math.abs(x - Math.round(x)) < 1e-6 ? String(Math.round(x)) : "~" + Math.round(x));
 const p1 = x => (Math.round(x * 10) / 10).toFixed(1);
 const short = n => n.replace(/\(.*?\)/g, "").split(/\s+/).filter(w => w.length > 2 && !/^(and|for|the|its)$/i.test(w)).map(w => w[0]).join("").toUpperCase().slice(0, 5);
 const col = p => (p < 75 ? "var(--red)" : p < 90 ? "var(--amber)" : "var(--green)");
@@ -149,7 +149,7 @@ function renderResults() {
     const line = (t, n, streak, reach) => {
       if (n > r.R) return `<li class="x">Can't reach ${t}% by ${planTxt} (needs ${n}, only ${r.R} left)</li>`;
       return `<li>Attend <b>${n}</b> of ${r.R} → ${t}% by ${planTxt}${n < r.R ? ` <span class="muted">(can skip ${r.R - n})</span>` : ""}</li>` +
-        (streak ? `<li class="muted">Back to ${t}% after ${streak} classes in a row${reach && reach !== "never" ? ` · ~${fmt(reach)}` : ""}</li>` : "");
+        (streak ? `<li class="muted">Back to ${t}% after ${streak} class${streak === 1 ? "" : "es"} in a row${reach && reach !== "never" ? ` · ~${fmt(reach)}` : ""}</li>` : "");
     };
     return `<div class="card ${cls}">
       <div class="chead"><div><b>${esc(sub.name)}</b><small>${sub.code}</small></div><span class="pill ${cls}">${lbl}</span></div>

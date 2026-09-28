@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>try{const t=localStorage.getItem("vc_theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
-<title>Attendance Planner</title>
+<title>Campus Planner — Attendance &amp; Free Rooms</title>
+<meta name="description" content="Plan your attendance to stay out of detention and find free classrooms in real time — built on the official section timetables.">
+<meta name="theme-color" content="#f5f5f7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230071e3'/%3E%3Cpath d='M18 34l9 9 19-21' stroke='white' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--mut:#6e6e73;--line:rgba(0,0,0,.08);--fill:#f2f2f4;--acc:#0071e3;--green:#248a3d;--amber:#b25000;--red:#d70015;--top:#0071e3;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04)}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#000;--card:#1c1c1e;--ink:#f5f5f7;--mut:#98989d;--line:rgba(255,255,255,.1);--fill:#2c2c2e;--acc:#2997ff;--green:#30d158;--amber:#ff9f0a;--red:#ff453a;--top:#2997ff;--shadow:none}}
@@ -102,7 +105,13 @@ code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;backgroun
 .gridctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.gridctl label{font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center}
 .gridctl select{width:auto;padding-right:30px;font-size:14px}
 .redit{border-spacing:0}.redit td,.redit th{text-align:left;padding:5px 8px;border-radius:0;background:none;font-weight:400;border-bottom:1px solid var(--line)}.redit select{width:auto;font-size:13px;padding:4px 26px 4px 8px}.redit input[type=number]{padding:4px 8px}
-[hidden]{display:none!important}input.bad{border-color:var(--red)!important;background:color-mix(in srgb,var(--red) 8%,var(--card))}
+[hidden]{display:none!important}
+.tabs{position:sticky;top:12px;z-index:40;backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);background:color-mix(in srgb,var(--fill) 85%,transparent);box-shadow:0 2px 12px rgba(0,0,0,.06)}
+#tab-att:not([hidden]),#tab-rooms:not([hidden]){animation:fadein .25s ease-out}@keyframes fadein{from{opacity:0;transform:translateY(4px)}}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.foot{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--mut);font-size:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+input.bad{border-color:var(--red)!important;background:color-mix(in srgb,var(--red) 8%,var(--card))}
 #mapwrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}@media(max-width:900px){#mapwrap{grid-template-columns:1fr}}
 .mapstage{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;position:relative}
 .maptools{position:relative;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 16px 0}
@@ -124,7 +133,7 @@ code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;backgroun
 #mapwrap.flat #map3d{height:auto;perspective:none;padding:10px 0}#mapwrap.flat .tower{position:relative;left:auto;top:auto;margin:0 auto;transform:none;height:auto;display:flex;flex-direction:column-reverse;gap:10px}
 #mapwrap.flat .slab{position:relative;height:190px;transform:none}#mapwrap.flat .slab.dim{display:none}
 #mappanel{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:20px;position:sticky;top:16px}
-.phead{display:flex;justify-content:space-between;align-items:flex-start}.phead h3{margin:0;font-size:26px;letter-spacing:-.02em}.x{width:28px;height:28px;padding:0;border-radius:50%;color:var(--mut)}
+.phead{display:flex;justify-content:space-between;align-items:flex-start}.phead h3{margin:0;font-size:26px;letter-spacing:-.02em}.pclose{flex:none;width:28px;height:28px;padding:0;border-radius:50%;color:var(--mut)}
 .count{border-radius:14px;padding:16px;margin:14px 0}.count small{color:var(--mut);font-size:13px}.count b{display:block;font-size:44px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}.count p{margin:6px 0 0;font-size:14px}
 .count.free{background:color-mix(in srgb,var(--green) 12%,transparent)}.count.free b{color:var(--green)}.count.soon{background:color-mix(in srgb,var(--amber) 12%,transparent)}.count.soon b{color:var(--amber)}.count.busy{background:color-mix(in srgb,var(--red) 10%,transparent)}.count.busy b{color:var(--red)}
 button.big{width:100%;padding:12px;font-size:16px}
@@ -226,6 +235,7 @@ button.big{width:100%;padding:12px;font-size:16px}
     <label class="muted" style="display:flex;gap:6px;align-items:center;margin:8px 0"><input type="checkbox" id="rground"> Treat 1xx rooms as the ground floor</label>
     <div class="tt" id="redit"></div><button id="rreset" style="margin-top:10px">Reset to defaults</button></details></div>
 </section>
+<footer class="foot"><span>Built on the 10 official section timetables · Odd semester 2026-27 · All times IST</span><span>Numbers are computed on-device; AI only reads requests and phrases answers.</span></footer>
 </div>
 <button id="fab" title="Attendance Advisor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>Ask Advisor</button>
 <div id="chat"><div class="chathead"><div><b>Attendance Advisor</b><small>Reads your dashboard and does the math</small></div><button id="chatx" aria-label="Close">✕</button></div>

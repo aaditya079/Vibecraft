@@ -68,7 +68,7 @@ function renderPanel() {
   else if (st.untilSec == null) { cls = "free"; big = st.afterHours ? "Free" : "Free today"; sub = st.afterHours ? "Outside class hours — no more classes today" : "No more classes in this room today"; }
   else { cls = st.state; big = clock(st.secsLeft); sub = `until the next class at <b>${hhmm(st.untilSec / 60)}</b><br>${esc(st.next.sec)} · ${esc(st.next.subj)}`; }
   const label = st.state === "busy" ? "Class ends in" : st.untilSec == null ? "" : "Free for";
-  p.innerHTML = `<div class="phead"><div><h3>${r}</h3><div class="muted">${floorName(floorOf(r))} · ${building(r)}${info.label ? " · " + esc(info.label) : ""}</div></div><button class="x" data-close aria-label="Close">✕</button></div>
+  p.innerHTML = `<div class="phead"><div><h3>${r}</h3><div class="muted">${floorName(floorOf(r))} · ${building(r)}${info.label ? " · " + esc(info.label) : ""}</div></div><button class="pclose" data-close aria-label="Close">✕</button></div>
     <div class="rmeta"><span>${info.ac ? "AC" : "Non-AC"}</span><span>${esc(info.type)}</span><span>~${info.cap} seats</span></div>
     <div class="count ${cls}"><small>${label}</small><b id="cdown">${big}</b><p>${sub}</p></div>
     ${st.state === "busy" ? `<p class="muted">This room is taken right now. Pick a green one.</p>` :
