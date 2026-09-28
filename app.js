@@ -351,12 +351,18 @@ function advisor(q) {
     const head = `<b>${n}-day ${LEAVE[type].toLowerCase()}</b>: ${fmt(from)}${n > 1 ? ` → ${fmt(to)}` : ""}` +
       (type === "od" ? ` <span class="muted">(OD is counted as present)</span>` : type === "medical" ? ` <span class="muted">(counted absent unless the HOD condones it)</span>` : "");
     if (!rows.length) return { text: `${head}<p>You have no classes${subs.length ? " of " + nm(subs[0]) : ""} on those days (weekend/holiday) — no impact.</p>`, leave: { from, to, type } };
-    const body = rows.map(x => `<li>${nm(x.k)}: ${type === "od" ? "on OD for" : "miss"} <b>${x.missed}</b> hr → now <b>${p1(x.now)}%</b>, right after the leave <b style="color:${col(x.after)}">${p1(x.after)}%</b>
-      ${x.drop ? `<br><span class="warn">Drops below 75%.</span> ${x.irr ? `<b class="warn">Cannot recover this semester!</b>` : `Attend the next <b>${x.rec}</b> classes in a row to get back${x.recDate ? ` (~${fmt(x.recDate)})` : ""}.`}` : x.drop90 ? `<br><span class="muted">Falls under 90%.</span>` : ""}
-      <br><span class="muted">Sem-end if you attend everything else: ${p1(x.end)}%</span></li>`).join("");
-    const verdict = bad.length ? `<p class="warn"><b>Verdict:</b> risky — ${bad.length} subject(s) fall into the detention zone.${type === "medical" ? " Get a medical certificate and apply for condonation." : ""}</p>`
-      : `<p class="good"><b>Verdict:</b> safe — you stay above 75% everywhere${subs.length ? "" : " this leave touches"}.</p>`;
-    return { text: `${head}${notFound}<ul>${body}</ul>${verdict}`, leave: { from, to, type } };
+    // short answer: verdict + one line per affected subject; full breakdown folded away
+    const shortName = k => esc(s.subjects[k].name.replace(/\s*\(.*?\)/g, ""));
+    const verdict = bad.length
+      ? `<p class="warn" style="margin:0 0 6px">Risky — ${rows.length === 1 ? `${shortName(bad[0].k)} drops` : `${bad.length} of ${rows.length} subjects drop`} below 75%.</p>`
+      : `<p class="good" style="margin:0 0 6px">Safe — you stay above 75%${subs.length ? "" : " in every subject"}.</p>`;
+    bad.sort((x, y) => x.after - y.after);
+    const shown = (bad.length ? bad : rows).slice(0, 4);
+    const lines = shown.map(x => `<li><b>${shortName(x.k)}</b> ${p1(x.now)}% → <b style="color:${col(x.after)}">${p1(x.after)}%</b>${x.drop ? (x.irr ? ` · <span class="warn">can't recover</span>` : ` · ${x.rec} in a row${x.recDate ? ` (by ${fmt(x.recDate)})` : ""}`) : ""}</li>`).join("");
+    const more = (bad.length ? bad : rows).length - shown.length;
+    const detail = rows.map(x => `<li>${nm(x.k)}: ${type === "od" ? "OD for" : "miss"} ${x.missed} hr · ${p1(x.now)}% → ${p1(x.after)}% · sem-end ${p1(x.end)}%${x.drop && !x.irr ? ` · recover after ${x.rec} in a row` : ""}</li>`).join("");
+    const tip = bad.length && type === "medical" ? `<p class="muted" style="margin:6px 0 0">Tip: get a medical certificate and ask your HOD about condonation.</p>` : "";
+    return { text: `${verdict}<p class="muted" style="margin:0">${head}</p>${notFound}<ul>${lines}${more > 0 ? `<li class="muted">+${more} more</li>` : ""}</ul>${tip}<details><summary class="muted" style="font-size:12px">Show full breakdown</summary><ul>${detail}</ul></details>`, leave: { from, to, type } };
   }
   // ── Intent 2: how many can I skip ──
   if (/skip|bunk|miss|leave|absent|off/.test(low)) {
